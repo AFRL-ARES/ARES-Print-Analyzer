@@ -228,8 +228,8 @@ def analyze(request: AnalysisRequest) -> Analysis:
 
 if __name__ == "__main__":
   print("PyAres Print Analyzer")
-  description = "A PyAres implementation of Greg's 3D Printing Analyzer"
-  analyzer = AresAnalyzerService(analyze, "Print Analyzer", "1.0.0", "An ARES implementation of Greg's print analyzer")
+  description = "A PyAres implementation of Graig Ganitano's 3D Printing Analyzer"
+  analyzer = AresAnalyzerService(analyze, "Print Analyzer", "1.0.0", description)
 
   analyzer.add_analysis_parameter("Image", AresDataType.BYTE_ARRAY)
   analyzer.add_setting("Base Image Path", AresDataType.STRING)

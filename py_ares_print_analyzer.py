@@ -205,7 +205,7 @@ def analyze(request: AnalysisRequest) -> Analysis:
   contours, hierarchy = cv2.findContours(hsv_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
   if not contours:
-    return 0
+    return Analysis(score, False)
   
   for contour in contours:
     area = cv2.contourArea(contour)

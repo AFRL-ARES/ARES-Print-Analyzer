@@ -1,6 +1,8 @@
 import numpy as np
 from stl import mesh
 import cv2 as cv
+import json
+
 def add_markers_to_stl(input_path, output_path, padding=8.0, marker_thickness=0.4, marker_size=8.0):
     """
     Adds circular and square markers to an STL file for computer vision pose estimation.
@@ -43,13 +45,13 @@ def add_markers_to_stl(input_path, output_path, padding=8.0, marker_thickness=0.
 
     all_markers = []
 
-    # Circle Markers go on the corners of the bounding box
+    # Circle Markers go on the corners of the bounding box, proceding clockwise from the top-left point
     corners = [
-        np.array([bbox_min[0], bbox_min[1], 0]),
-        np.array([bbox_max[0], bbox_min[1], 0]),
-        np.array([bbox_max[0], bbox_max[1], 0]),
         np.array([bbox_min[0], bbox_max[1], 0]),
-    ]
+        np.array([bbox_max[0], bbox_max[1], 0]),
+        np.array([bbox_max[0], bbox_min[1], 0]),
+        np.array([bbox_min[0], bbox_min[1], 0])]
+    
     for corner in corners:
         circle_marker = make_circular_marker(corner, marker_size/2, marker_thickness)
         all_markers.append(circle_marker)
@@ -63,18 +65,38 @@ def add_markers_to_stl(input_path, output_path, padding=8.0, marker_thickness=0.
         ((bbox_center[0], bbox_min[1]), np.array((0,-1))), # bottom edge
         ((bbox_min[0], bbox_center[1]), np.array((-1,0))), # left edge
     ]
-
+    aruco_corners = [] 
     # generate aruco markers
     # Using the 4x4 dictionary, which has 50 unique IDs (0-49), since we're only using 4 markers, this is plenty
     aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
     for i, (midpoint, normal_guess) in enumerate(edge_midpoints_and_normals):
-        aruco_marker = create_aruco_marker(i, aruco_dict, marker_size, marker_thickness, midpoint, invert=False)
+        aruco_marker,aruco_corner = create_aruco_marker(i, aruco_dict, marker_size, marker_thickness, midpoint, invert=False)
 
         if aruco_marker is not None:
             all_markers.append(aruco_marker)
+            aruco_corners.append(aruco_corner)
         else:
             print(f"Warning: ArUco marker {i} could not be created.")
 
+    # Collect the locations of the bounding box reference markers in space relative to the model,
+    # This information will be necessary for pose estimation, so we'll save it to a JSON file for later use.
+    spatial_dict = {'object_center':bbox_center.tolist()+[0],
+                    'object_bounds_min':bbox_min.tolist()+[0],
+                    'object_bounds_max':bbox_max.tolist()+[0],
+                    'object_bounds_extent':bbox_extent.tolist()+[0],
+                    'marker_size':marker_size,
+                    'aruco_ids':[0,1,2,3],
+                    'aruco_corners':np.array(aruco_corners).tolist(),
+                    'circle_centers':np.array(corners).tolist()}
+
+    # Make sure the output folder exists
+    p = Path(output_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    json_path = p.parent / (p.stem+"_spatial.json")
+
+    with open(str(json_path), 'w') as f:
+            json.dump(spatial_dict, f)  
+    
     # Merge and save mesh objects to new STL files
     combined_data = np.concatenate([object_mesh.data] + [m.data for m in all_markers])
     combined_mesh = mesh.Mesh(combined_data)
@@ -373,12 +395,72 @@ def create_aruco_marker(marker_id, dictionary, physical_size, thickness, center,
     marker_mesh = mesh.Mesh(np.zeros(len(all_faces), dtype=mesh.Mesh.dtype))
     marker_mesh.vectors = np.array(all_faces)
     marker_mesh.update_normals()
-    return marker_mesh
+    return marker_mesh, start_corner+center
+
+def convert_stl_to_obj(input_stl_path, output_obj_path):
+    """
+    Converts a .stl file to a .obj file, including vertex normals.
+
+    Args:
+        input_stl_path (str): Path to the input STL file.
+        output_obj_path (str): Path to save the output OBJ file.
+    """
+    try:
+        # Load the STL mesh
+        stl_mesh = mesh.Mesh.from_file(input_stl_path)
+        
+        # --- Vertex and Face Extraction ---
+        vertices = stl_mesh.vectors.reshape(-1, 3)
+        unique_vertices, inverse_indices = np.unique(vertices, axis=0, return_inverse=True)
+        faces = inverse_indices.reshape(-1, 3)
+        
+        # --- Vertex Normal Calculation ---
+        face_normals = stl_mesh.normals
+        vertex_normals = np.zeros(unique_vertices.shape, dtype=float)
+        
+        # Add each face's normal to its three vertices
+        for i, face in enumerate(faces):
+            vertex_normals[face[0]] += face_normals[i]
+            vertex_normals[face[1]] += face_normals[i]
+            vertex_normals[face[2]] += face_normals[i]
+        
+        # Normalize the summed normals to get the final vertex normal
+        norms = np.linalg.norm(vertex_normals, axis=1)[:, np.newaxis]
+        # Prevent division by zero for vertices that might not be part of any face
+        valid_norms = np.where(norms != 0, norms, 1)
+        vertex_normals /= valid_norms
+        
+        # --- Write the OBJ file ---
+        with open(output_obj_path, 'w') as f:
+            f.write(f"# Converted from {input_stl_path}\n")
+            f.write(f"# Vertices: {len(unique_vertices)}\n")
+            f.write(f"# Faces: {len(faces)}\n")
+            
+            # Write vertices (v)
+            for v in unique_vertices:
+                f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
+            
+            # Write vertex normals (vn)
+            for vn in vertex_normals:
+                f.write(f"vn {vn[0]:.6f} {vn[1]:.6f} {vn[2]:.6f}\n")
+            
+            # Write faces (f v1//vn1 v2//vn2 v3//vn3)
+            # OBJ is 1-indexed, so we add 1 to each index
+            for face in faces:
+                v1, v2, v3 = face
+                f.write(f"f {v1+1}//{v1+1} {v2+1}//{v2+1} {v3+1}//{v3+1}\n")
+                
+        print(f"Successfully converted '{input_stl_path}' to '{output_obj_path}' with vertex normals.")
+
+    except Exception as e:
+        print(f"An error occurred during STL to OBJ conversion: {e}")
 
 if __name__ == "__main__":
     from pathlib import Path
     input_stl = Path("../athena-demo-resources/stl files/orignal/3dbenchy.stl")
     output_file = input_stl.parent.parent / 'cv markers' / (input_stl.stem + "_marked.stl")
+    output_obj = input_stl.parent.parent.parent / 'obj files' / (input_stl.stem + ".obj")
     add_markers_to_stl(str(input_stl), str(output_file),padding=10)
+    convert_stl_to_obj(str(input_stl), str(output_obj))
     # output_stl = "test_files/CalibrationCube_with_markers.stl"
     # add_markers_to_stl(input_stl, output_stl)

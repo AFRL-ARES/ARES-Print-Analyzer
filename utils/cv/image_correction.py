@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 import json
-from skimage.measure import label, regionprops, regionprops_table
+from skimage.measure import label, regionprops_table
 from scipy.ndimage import binary_fill_holes
 from collections import defaultdict
 
@@ -9,7 +9,6 @@ from collections import defaultdict
 
 def correct_camera_distortion(image_data,calibration_file):
     DIM = image_data.shape[:2][::-1]
-
     with open(calibration_file, mode="r", encoding="utf-8") as read_file:
         cal_data = json.load(read_file)
     K = np.array(cal_data['camera_matrix'])
@@ -22,7 +21,8 @@ def correct_camera_distortion(image_data,calibration_file):
 
     undist_image = cv.remap(image_data, map1, map2, interpolation=cv.INTER_LINEAR,borderMode=cv.BORDER_CONSTANT)
 
-    return undist_image 
+    return undist_image
+
 def dectect_aruco_markers(img,debug=False):
     # markers are expected to be black and white, so convert the image to grayscale
     gray = cv.medianBlur(cv.cvtColor(img, cv.COLOR_BGR2GRAY),5)

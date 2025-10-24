@@ -4,7 +4,7 @@
 # File: /src/ares_print_analyzer/analysis/get_chi_statistic.py
 # Project: ARES-Print-Analyzer
 # Created Date: Friday, October 24th 2025, 9:40:21 am
-# Author(s): Graig Ganiano, Nick Kleiner, Arthur W. N. Sloan
+# Author(s): Graig Ganitano, Nick Kleiner, Arthur W. N. Sloan
 # -----
 # MIT License
 # 

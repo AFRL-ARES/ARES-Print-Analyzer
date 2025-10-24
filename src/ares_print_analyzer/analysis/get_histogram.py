@@ -4,7 +4,7 @@
 # File: /src/ares_print_analyzer/analysis/get_histogram.py
 # Project: ARES-Print-Analyzer
 # Created Date: Friday, October 24th 2025, 10:04:29 am
-# Author(s): Graig Ganiano, Nick Kleiner, Arthur W. N. Sloan
+# Author(s): Graig Gantiano, Nick Kleiner, Arthur W. N. Sloan
 # -----
 # MIT License
 # 

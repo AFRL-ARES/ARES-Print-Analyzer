@@ -11,8 +11,9 @@ model_json = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print 
 debug_folder = '../athena-demo-resources/debug'
 test_name = 'X150Y105Z110'
 
+e_img = cv.imread(image_file)
 
-c, r, roi_min,roi_max, obj_center = pose_and_render(image_file,
+c, r, roi_min,roi_max, obj_center = pose_and_render(e_img,
                                                     model_file,
                                                     config_json,
                                                     model_json,

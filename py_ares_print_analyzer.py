@@ -1,236 +1,147 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+###
+# File: /py_ares_print_analyzer.py
+# Project: ARES-Print-Analyzer
+# Created Date: Tuesday, October 14th 2025, 11:14:37 am
+# Author(s): Graig Gantiano, Nick Kleiner, Arthur W. N. Sloan
+# -----
+# MIT License
+# 
+# Copyright (c) 2025 AFRL-ARES
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# 
+###
+
 from PyAres import AresAnalyzerService, Analysis, AnalysisRequest, AresDataType
 from scipy.optimize import linear_sum_assignment
-from scipy.spatial.distance import pdist
-import numpy as np
-import math
 import cv2
+import numpy as np
+from pathlib import Path
+from ares_print_analyzer import pose_and_render
+from ares_print_analyzer.analysis import *
 
 def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
   nparr = np.frombuffer(image_bytes, np.uint8)
   img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
   return img_np
 
-def dist(p1, p2):
-  return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
-
-def angle(p1, p2):
-  ydif = p2[1] - p1[1]
-  xdif = p2[0] - p1[0]
-  theta = math.atan2(ydif, xdif)
-
-  return theta
-
-def get_chi_statistic_optimized(histogram1, histogram2):
-  OUTLIER_THRESHOLD = 1.2
-  EPSILON = 1e-9  # A small number to prevent division by zero
-
-  # 1. Convert lists to NumPy arrays for vectorized operations.
-  h1 = np.array(histogram1, dtype=np.float32)
-  h2 = np.array(histogram2, dtype=np.float32)
-
-  size1, _ = h1.shape
-  size2, _ = h2.shape
-  size = max(size1, size2)
-
-  # 2. Initialize the final stats matrix with the outlier value.
-  # This handles the padding logic from your original function upfront.
-  stats = np.full((size, size), OUTLIER_THRESHOLD)
-
-  # If either histogram is empty, we can't compute, so return the outlier matrix.
-  if size1 == 0 or size2 == 0:
-      return stats
-
-  # 3. Use broadcasting to compute all pairwise differences and sums at once.
-  # h1[:, np.newaxis, :] expands h1 to shape (size1, 1, 60)
-  # h2[np.newaxis, :, :] expands h2 to shape (1, size2, 60)
-  # NumPy then broadcasts them to a common shape of (size1, size2, 60).
-  diff = h1[:, np.newaxis, :] - h2[np.newaxis, :, :]
-  sum_ = h1[:, np.newaxis, :] + h2[np.newaxis, :, :]
-
-  # 4. Perform the Chi-squared calculation in a single, vectorized step.
-  # We sum along the last axis (axis=2), which is the 60 histogram bins.
-  # This collapses the (size1, size2, 60) matrix into a (size1, size2) result.
-  chi_sq_matrix = np.sum((diff ** 2) / (sum_ + EPSILON), axis=2) / 2
-
-  # 5. Place the computed results into the top-left corner of the padded matrix.
-  stats[:size1, :size2] = chi_sq_matrix
-
-  return stats
-
-def get_chi_statistic(histogram1, histogram2):
-  OUTLIER_THRESHOLD = 1.2
-  size1, size2 = len(histogram1), len(histogram2)
-  size = max(size1, size2)
-  stats = np.zeros((size, size))  
-
-  for i in range(size):
-      for j in range(size):
-          if i >= size1 or j >= size2:
-              stats[i, j] = OUTLIER_THRESHOLD
-              continue
-
-          summation = 0
-          for k in range(60):  
-              diff = histogram1[i][k] - histogram2[j][k] if i < size1 and j < size2 else 0
-              sum_ = histogram1[i][k] + histogram2[j][k] if i < size1 and j < size2 else 1
-              if sum_ != 0:  
-                  summation += (diff * diff) / sum_
-          stats[i, j] = summation / 2
-
-  return stats
-
-def get_histogram_optimized(contourPts):
-  # 1. Squeeze the contour points into an (N, 2) array.
-  # contourPts from cv2.findContours has shape (N, 1, 2)
-  points = np.squeeze(contourPts)
-  n_points = len(points)
-
-  if n_points < 2:
-      return np.zeros((n_points, 60))
-
-  # 2. Use scipy.spatial.distance.pdist for a highly optimized way
-  # to calculate all pairwise distances. This replaces the first O(N^2) loop.
-  # pdist returns a "condensed" distance matrix (a 1D array).
-  all_distances = pdist(points)
-
-  # We need to handle cases where distance is zero.
-  log_distances = np.log(np.maximum(1e-5, all_distances))
-
-  maxLogDistance = np.max(log_distances)
-  minLogDistance = np.max([0.0, np.min(log_distances)]) # Ensure min is not negative
-
-  radialBound = maxLogDistance + (maxLogDistance - minLogDistance) * 0.01
-  intervalSize = radialBound / 5.0
-  angleSize = math.pi / 6.0
-
-  # 3. Use NumPy broadcasting to calculate all pairwise differences at once.
-  # This is the core of the vectorization for the main histogram calculation.
-  # points[:, np.newaxis, :] -> shape (N, 1, 2)
-  # points[np.newaxis, :, :] -> shape (1, N, 2)
-  # The difference is an (N, N, 2) array of all (dx, dy) pairs.
-  diffs = points[:, np.newaxis, :] - points[np.newaxis, :, :]
-
-  # 4. Calculate angles and distances for all pairs simultaneously.
-  # These operations now act on entire (N, N) matrices.
-  angles = np.arctan2(diffs[:, :, 1], diffs[:, :, 0])
-  distances = np.sqrt(diffs[:, :, 0]**2 + diffs[:, :, 1]**2)
-
-  log_distances_matrix = np.log(np.maximum(1e-5, distances))
-
-  # 5. Calculate the bin for every pair at once.
-  angle_bins = (angles / angleSize).astype(int)
-  distance_bins = (log_distances_matrix / intervalSize).astype(int)
-
-  # Combine into a single index for the 60-bin histogram.
-  indices = distance_bins * 12 + angle_bins
-
-  # 6. Efficiently populate the histogram.
-  # We create a mask to ignore invalid indices and self-comparisons.
-  histogram = np.zeros((n_points, 60), dtype=int)
-  valid_mask = (indices >= 0) & (indices < 60)
-  np.fill_diagonal(valid_mask, False) # Ignore point-to-self comparisons
-
-  # Loop through each point and use the super-fast np.bincount
-  # to count the occurrences of each bin index for that point.
-  for i in range(n_points):
-      # Get the valid indices for this row
-      row_indices = indices[i, valid_mask[i]]
-      # np.bincount is perfect for this task.
-      counts = np.bincount(row_indices, minlength=60)
-      histogram[i, :] = counts[:60] # Ensure we don't exceed 60 bins
-
-  return histogram
-
-def get_histogram(contourPts):
-  points = [pt[0] for pt in contourPts]
-
-  maxLogDistance = -float('inf')
-  minLogDistance = float('inf')
-
-  for i in range(len(points)):
-      for j in range(i + 1, len(points)):
-          distance = dist(points[i], points[j]) 
-          logDistance = math.log(max(1e-5,distance))
-          if logDistance > maxLogDistance:
-              maxLogDistance = logDistance
-          if logDistance < minLogDistance:
-              minLogDistance = max(0.0, logDistance)
-
-  radialBound = maxLogDistance + (maxLogDistance - minLogDistance) * 0.01
-  intervalSize = radialBound / 5.0
-  angleSize = math.pi / 6.0
-
-
-  histogram = [[0 for _ in range(60)] for _ in range(len(points))]
-
-
-  for i in range(len(points)):
-      for j in range(len(points)):
-          if i != j:
-              ang = angle(points[i], points[j])
-              angleBin = int(ang / angleSize)
-              distance = dist(points[i], points[j]) 
-              distance = max(0.0, math.log(max(1e-5,distance)))
-              distanceBin = int(distance / intervalSize)
-              index = distanceBin * 12 + angleBin
-              if 0 <= index < 60:
-                  histogram[i][index] += 1
-
-  return histogram
-
 def analyze(request: AnalysisRequest) -> Analysis:
+  # inputs
   image_bytes: bytes = request.inputs["Image"]
-  base_image: str = request.settings["Base Image Path"]
-  image_numpy_array = convert_image_bytes_to_ndarray(image_bytes)
-  synthetic_image = cv2.imread(base_image)
-  synthetic_image_gray = cv2.cvtColor(synthetic_image, cv2.COLOR_BGR2GRAY)
-  ret, syn_mask = cv2.threshold(synthetic_image_gray, 40, 255, cv2.THRESH_BINARY)
-  contours, hierarchy = cv2.findContours(syn_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+  input_image = convert_image_bytes_to_ndarray(image_bytes)
+  experiment_name: str = request.inputs["Experiment Name"]
+  campain_name: str = request.inputs["Campaign Name"]
+  # settings
+  model_file: str = request.settings["Model Path"]
+  config_json: str = request.settings["Config JSON Path"]
+  model_json: str = request.settings["Model JSON Path"]
+  output_dir: str = request.settings["Output Path"]
 
-  largest_contour = None
-  max_area = 0
-
-  for contour in contours:
-    area = cv2.contourArea(contour)
-    if area > max_area:
-      max_area = area
-      largest_contour = contour
+  # 1. Confrim that all necesary files exist and are in the right format
+  if (not Path(model_file).exists()) | (Path(model_file).suffix == '.stl'):
+    raise FileExistsError("The specifed model file does not exist or is not a .stl file")
+    return Analysis(0.0, False)
+  if not Path(config_json).exists():
+    raise FileExistsError("The specifed configuaton JSON file does not exist")
+    return Analysis(0.0, False)
+  if not Path(model_json).exists():
+    raise FileExistsError("The specifed model information JSON file does not exist")
+    return Analysis(0.0, False)
   
-  hsv = cv2.cvtColor(image_numpy_array, cv2.COLOR_BGR2HSV)
-  hsv_mask = cv2.inRange(hsv, (95, 95, 95), (179, 255, 255))
+  # 2. Create the output path if it does not exist
+  output_path = Path(output_dir) / campain_name / experiment_name
+  output_path.mkdir(exist_ok=True, parents=True)
+  # 3. Perform pose estimation on experimental image and render syntheic image
+  try:
+    experiment_image, synthetic_image, roi_min, roi_max, obj_center = pose_and_render(input_image,
+                                                                                      model_file,
+                                                                                      config_json,
+                                                                                      model_json,
+                                                                                      str(output_path),
+                                                                                      experiment_name)
+  except Exception as e:
+    print("An error occured in the compuer vision pipeline: {}".format(e))
+    return Analysis(0.0, False)
 
-  largest_contour_camera = None
-  max_area_camera = 0
+  # 4. Crop the images down to only the ROI and Get the contours from the experimental and synthetic images
+  exp_crop = experiment_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
+  syn_crop = synthetic_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
+  local_center = obj_center - roi_min
+  try:
+    exp_contour, syn_contour = get_contours(exp_crop,syn_crop,local_center)
+  except Exception as e:
+    print("An error occured during contour extration: {}".format(e))
+    return Analysis(0.0, False)
+  # 5. Get the histograms for both contours
+  try: 
+    exp_hist = get_histogram(exp_contour)
+    syn_hist = get_histogram(syn_contour)
+  except Exception as e: 
+    print("An error occured during histogram calculation: {}".format(e))
+    return Analysis(0.0, False)
 
-  contours, hierarchy = cv2.findContours(hsv_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-  if not contours:
-    return Analysis(score, False)
-  
-  for contour in contours:
-    area = cv2.contourArea(contour)
-    if area > max_area_camera:
-      max_area_camera = area
-      largest_contour_camera = contour
-  
-  hist_syn = get_histogram_optimized(largest_contour)
-  hist_camera = get_histogram_optimized(largest_contour_camera)
-  stats = get_chi_statistic_optimized(hist_syn, hist_camera)
-  row_ind, col_ind = linear_sum_assignment(stats)
-
-  score = stats[row_ind, col_ind].sum()/len(row_ind)
+  # 6. Score the contours on how similar they are
+  try:
+    stats = get_chi_statistic(syn_hist,exp_hist)
+    row_ind, col_ind = linear_sum_assignment(stats)
+    score = stats[row_ind, col_ind].sum()/len(row_ind)
+  except Exception as e:
+    print("An error occured during scoring: {}".format(e))
+    return Analysis(0.0, False)
   #D_MAX = 2.0
   #D_clipped = min(score, D_MAX)
-
   #normalized_score = 10 * max(1.0 - (D_clipped / D_MAX))
+  
   analysis = Analysis(score, True)
   return analysis
 
 if __name__ == "__main__":
   print("PyAres Print Analyzer")
-  description = "A PyAres implementation of Graig Ganitano's 3D Printing Analyzer"
+  description = "A PyAres implementation of a contour shape analsyis routine based on the " \
+  "work of Graig Ganitano (DOI: 10.1007/s40964-023-00480-1)"
+
+  """
+  Analyzer inputs are:
+  1. The experimental image - key: "Image",
+  2. The name of the experiment - key: "Experiment Name"
+  3. The name of the campaign - key: "Campaign Name"
+
+  Analyzer Settings are: 
+  1. The path to the stl model printed - key: "Model Path"
+  2. The path to the configuration json containing details about the experimental configuration - key: "Config JSON Path"
+  3. The path to the json file containing details about the 3d model - key: "Model JSON Path"
+  4. The parent directory for any outputs - key: "Output Path"
+    Note: Output images will be saved in <Output Path>/campaign_name/experiment_name/
+
+  """
+  
+
   analyzer = AresAnalyzerService(analyze, "Print Analyzer", "1.0.0", description)
 
   analyzer.add_analysis_parameter("Image", AresDataType.BYTE_ARRAY)
-  analyzer.add_setting("Base Image Path", AresDataType.STRING)
+  analyzer.add_analysis_parameter("Experiment Name", AresDataType.STRING)
+  analyzer.add_analysis_parameter("Campaign Name", AresDataType.STRING)
+
+  analyzer.add_setting("Model Path", AresDataType.STRING)
+  analyzer.add_setting("Config JSON Path", AresDataType.STRING)
+  analyzer.add_setting("Model JSON Path", AresDataType.STRING)
+  analyzer.add_setting("Output Path", AresDataType.STRING)
   analyzer.start()

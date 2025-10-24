@@ -1,3 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+###
+# File: /src/ares_print_analyzer/pose_and_render.py
+# Project: ARES-Print-Analyzer
+# Created Date: Thursday, October 23rd 2025, 11:17:42 am
+# Author(s): Arthur W. N. Sloan
+# -----
+# MIT License
+# 
+# Copyright (c) 2025 AFRL-ARES
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# 
+###
 from .cv_pipeline import *
 from .render_pipeline import *
 import numpy as np
@@ -9,12 +40,8 @@ from itertools import product
 def get_analysis_roi(img_w,img_h,config_data):
     # Get the bounding box plus 10% for cood measure
 
-    roi_mask = np.zeros((img_h,img_w)).astype(np.uint8)
-
     bbox_min = np.array(config_data['object_bounds_min'])
-    # bbox_min -= 0.1*np.abs(bbox_min)
     bbox_max = np.array(config_data['object_bounds_max'])
-    # bbox_max += 0.1*np.abs(bbox_max)
     bbox_height = np.array(config_data['object_bounds_extent'][2])
 
     K = np.array(config_data['camera_matrix'])
@@ -42,7 +69,7 @@ def get_analysis_roi(img_w,img_h,config_data):
 
 
 
-def pose_and_render(image_path: str,
+def pose_and_render(img: np.ndarray,
                     model_path: str,
                     config_json: str,
                     model_json: str,
@@ -71,7 +98,6 @@ def pose_and_render(image_path: str,
     
     config_data = c_data | m_data
 
-    img = cv.imread(image_path)
     c_img = correct_distortion(img,config_data)
     img_W = c_img.shape[1]
     img_H = c_img.shape[0]

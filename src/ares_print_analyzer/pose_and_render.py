@@ -12,9 +12,9 @@ def get_analysis_roi(img_w,img_h,config_data):
     roi_mask = np.zeros((img_h,img_w)).astype(np.uint8)
 
     bbox_min = np.array(config_data['object_bounds_min'])
-    bbox_min -= 0.1*np.abs(bbox_min)
+    # bbox_min -= 0.1*np.abs(bbox_min)
     bbox_max = np.array(config_data['object_bounds_max'])
-    bbox_max += 0.1*np.abs(bbox_max)
+    # bbox_max += 0.1*np.abs(bbox_max)
     bbox_height = np.array(config_data['object_bounds_extent'][2])
 
     K = np.array(config_data['camera_matrix'])
@@ -23,7 +23,7 @@ def get_analysis_roi(img_w,img_h,config_data):
     rvec = np.array(config_data['opencv_rotation_vector'])
     x_pts = [bbox_min[0],bbox_max[0]]
     y_pts = [bbox_min[1],bbox_max[1]]
-    z_pts = [0-0.1*bbox_height,bbox_height*1.1]
+    z_pts = [0,bbox_height]
 
     points = np.array(list(product(*[x_pts,y_pts,z_pts])))
     p,_ = cv.projectPoints(points, rvec, tvec, K, D)
@@ -33,8 +33,12 @@ def get_analysis_roi(img_w,img_h,config_data):
     p[p[:,1] >= img_h] = img_h
     roi_min = np.min(p,axis=0)
     roi_max = np.max(p,axis=0)
+    
+    obj_center,_ = cv.projectPoints(np.array([[0.0,0.0,0.0]]), rvec, tvec, K, D)
 
-    return roi_min,roi_max
+    p = p.astype(np.int32).squeeze()
+    obj_center = obj_center.astype(np.int32).squeeze()
+    return roi_min,roi_max, obj_center
 
 
 
@@ -44,7 +48,7 @@ def pose_and_render(image_path: str,
                     model_json: str,
                     output_folder: str,
                     experiment_name: str,
-                    debug: bool = False) -> tuple[np.ndarray, np.ndarray]:
+                    debug: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # Ensure the output folder(s) exist
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -109,9 +113,9 @@ def pose_and_render(image_path: str,
         r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H)
 
     # using the model bouding box and extent data and the pose estimation, figure out the pixels we need to actually do the analysis
-    roi_min, roi_max = get_analysis_roi(img_W,img_H,config_data)
+    roi_min, roi_max, obj_center = get_analysis_roi(img_W,img_H,config_data)
 
-    return c_img, r_img, roi_min, roi_max
+    return c_img, r_img, roi_min, roi_max, obj_center
 
     
         

@@ -95,6 +95,7 @@ def add_markers_to_stl(input_path,
                     'object_bounds_max':bbox_max.tolist()+[0],
                     'object_bounds_extent':bbox_extent.tolist(),
                     'marker_size':marker_size,
+                    'marker_thickness':marker_thickness,
                     'aruco_ids':aruco_ids,
                     'aruco_corners':np.array(aruco_corners).tolist(),
                     'circle_centers':np.array(corners).tolist()}

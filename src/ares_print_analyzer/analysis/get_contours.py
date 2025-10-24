@@ -72,14 +72,14 @@ def get_contours(experimental_image: np.ndarray,
     # Use Otsu's method to estimate the right global threshold value and then tweak it a bit for the actual
     syn_ret , _ = cv.threshold(syn_gray, 0, 255, cv.THRESH_OTSU)
     exp_ret, _ = cv.threshold(exp_gray, 0, 255, cv.THRESH_OTSU)
-    _ , syn_mask = cv.threshold(syn_gray, syn_ret*1.1, 255, cv.THRESH_BINARY)
-    _ , exp_mask = cv.threshold(exp_gray, exp_ret*1.1, 255, cv.THRESH_BINARY)
+    _ , syn_mask = cv.threshold(syn_gray, syn_ret, 255, cv.THRESH_BINARY)
+    _ , exp_mask = cv.threshold(exp_gray, exp_ret, 255, cv.THRESH_BINARY)
 
     # Find the contours of all white (True) blobs in the mask images.
     # This can return multiple contours, but thanks to the CV pose estimation we know where the 
     # object should be in image coordinates
 
-    exp_cont,_ = cv.findContours(syn_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    exp_cont,_ = cv.findContours(exp_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     if len(exp_cont) > 0:
         experimental_contour = downselect_contours(exp_cont, object_center)
     else:
@@ -90,19 +90,6 @@ def get_contours(experimental_image: np.ndarray,
         synthetic_contour = downselect_contours(syn_cont,object_center)
     else:
         raise Warning("Could Not find any synthetic contours")
-    
-
-    fig, ax = plt.subplots(1,2)
-
-    ax[0].imshow(exp_mask)
-    ax[0].set_title('Experimetnal Image')
-    ax[0].axis('off')
-
-    ax[1].imshow(syn_mask)
-    ax[1].set_title('Synthetic Image')
-    ax[1].axis('off')
-
-    fig.show()
 
     if debug:
         e_img_m = experimental_image.copy()
@@ -113,3 +100,4 @@ def get_contours(experimental_image: np.ndarray,
         return experimental_contour, synthetic_contour, e_img_m,s_img_m
     else:
         return experimental_contour, synthetic_contour
+

@@ -29,6 +29,7 @@ def render_synthetic_image(model_file:str,
             debug_out = Path(debug_folder)/"scene.blend"
             bpy.ops.wm.save_as_mainfile(filepath=str(debug_out))
 
+    bpy.ops.wm.read_factory_settings()
     return img
 
 def init_scene(model_file,W,H):
@@ -123,7 +124,7 @@ def setup_lights():
     cam = bpy.data.objects["Camera"]
     light_data = bpy.data.lights.new(name="LED", type='AREA')
     light_data.shape ='DISK'
-    light_data.energy = 25000
+    light_data.energy = 30000
     light_data.size=3
     for i in np.arange(n):
         light_name = "Light_{}".format(i)
@@ -141,7 +142,7 @@ def set_object_color(color_rgb):
     # convert the supplied color to HSV, bump up the saturation to compensate for rendering effects
     rgb = np.atleast_1d(color_rgb).astype(np.uint8)
     hsv = cv.cvtColor(rgb.reshape(1,1,3),cv.COLOR_RGB2HSV) 
-    hsv[:,:,1] = hsv[:,:,1]*1.3
+    hsv[:,:,1] = hsv[:,:,1]
     rgb = cv.cvtColor(hsv,cv.COLOR_HSV2RGB).flatten() 
     vals = rgb/255
     vals = (vals[0],vals[1],vals[2],1)
@@ -150,7 +151,7 @@ def set_object_color(color_rgb):
 def set_world_color(color_rgb):
     rgb = np.atleast_1d(color_rgb).astype(np.uint8)
     hsv = cv.cvtColor(rgb.reshape(1,1,3),cv.COLOR_RGB2HSV) 
-    hsv[:,:,1] = hsv[:,:,1]*1.3
+    hsv[:,:,1] = hsv[:,:,1]
     rgb = cv.cvtColor(hsv,cv.COLOR_HSV2RGB).flatten() 
     vals = rgb/255
     vals = (vals[0],vals[1],vals[2],1)
@@ -174,7 +175,7 @@ def render_image():
 def make_ground_plane(color_rgb):
     rgb = np.atleast_1d(color_rgb).astype(np.uint8)
     hsv = cv.cvtColor(rgb.reshape(1,1,3),cv.COLOR_RGB2HSV) 
-    hsv[:,:,1] = hsv[:,:,1]*1.3
+    hsv[:,:,1] = hsv[:,:,1]
     rgb = cv.cvtColor(hsv,cv.COLOR_HSV2RGB).flatten() 
     vals = rgb/255
     vals = (vals[0],vals[1],vals[2],1)

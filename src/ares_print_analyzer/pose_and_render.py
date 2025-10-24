@@ -106,7 +106,7 @@ def pose_and_render(img: np.ndarray,
 
     if not debug:
         corners, ids, inverted = detect_aruco_markers(c_img)
-        circle_centers, d_img = detect_corner_markers(c_img,inverted)
+        circle_centers = detect_corner_markers(c_img,inverted)
         
     else:
         corners, ids, inverted, d_img = detect_aruco_markers(c_img,debug=True)
@@ -119,6 +119,7 @@ def pose_and_render(img: np.ndarray,
 
 
     object_points, image_points = orient_markers((ids, corners), circle_centers, config_data)
+
     if debug:
         rvec, tvec, d_img = estimate_pose(object_points, image_points, config_data,debug=True,image_for_debug=c_img)
         # Save the pose_estimation debug image to the debug folder
@@ -137,6 +138,8 @@ def pose_and_render(img: np.ndarray,
         r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H,debug=True,debug_folder=str(debug_folder))
     else:
         r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H)
+    # Save the Rendered image to the output folder
+    cv.imwrite(str((output_folder / (experiment_name+"_render.jpg"))),r_img)
 
     # using the model bouding box and extent data and the pose estimation, figure out the pixels we need to actually do the analysis
     roi_min, roi_max, obj_center = get_analysis_roi(img_W,img_H,config_data)

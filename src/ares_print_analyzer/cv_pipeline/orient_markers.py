@@ -24,6 +24,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
         model_aruco_corners = np.array(config_data['aruco_corners'], dtype=np.float32)
         model_aruco_ids = np.array(config_data['aruco_ids'], dtype=int)
         model_circle_centers = np.array(config_data['circle_centers'], dtype=np.float32)
+        marker_thickness = config_data['marker_thickness']
     except KeyError as e:
         print(f"Error: Missing expected key in JSON file - {e}")
         return None, None
@@ -224,6 +225,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
     
     # Convert lists to NumPy arrays
     object_points = np.array(object_points, dtype=np.float32)
+    object_points += np.array([0,0,marker_thickness]) # Account for the fact that we'll be looking at the tops of the markers
     image_points = np.array(image_points, dtype=np.float32)
 
     return object_points, image_points

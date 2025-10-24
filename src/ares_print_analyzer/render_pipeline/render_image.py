@@ -2,8 +2,19 @@ import bpy
 import numpy as np
 import cv2 as cv
 from mathutils import Matrix, Vector
-
-def render_synthetic_image(model_file,W,H,camera_intrinsic,rvec,tvec,filament_rgb, bed_rgb, output_path="render.jpg",debug=True):
+import tempfile 
+from pathlib import Path
+def render_synthetic_image(model_file:str,
+                           camera_intrinsic:np.ndarray,
+                           rvec:np.ndarray,
+                           tvec:np.ndarray,
+                           filament_rgb:tuple | np.ndarray, 
+                           bed_rgb:tuple | np.ndarray,
+                           debug_folder: str | None= None,
+                           W:int = 1920,
+                           H:int = 1080,
+                           debug:bool=False) -> np.ndarray:
+    
     init_scene(model_file,W,H) # Intialize the scene with user supplied model    
     cam_cv2blend(camera_intrinsic)
     set_camera_position(rvec,tvec)
@@ -11,10 +22,14 @@ def render_synthetic_image(model_file,W,H,camera_intrinsic,rvec,tvec,filament_rg
     set_object_color(filament_rgb)
     set_world_color(bed_rgb)
     make_ground_plane(bed_rgb)
-    render_image(output_path)
+    img = render_image()
 
     if debug:
-        bpy.ops.wm.save_as_mainfile(filepath='debug.blend')
+        if debug_folder is not None:
+            debug_out = Path(debug_folder)/"scene.blend"
+            bpy.ops.wm.save_as_mainfile(filepath=str(debug_out))
+
+    return img
 
 def init_scene(model_file,W,H):
     # Blender loads in with a default camera, light, and cube
@@ -141,13 +156,20 @@ def set_world_color(color_rgb):
     vals = (vals[0],vals[1],vals[2],1)
     bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = vals
 
-def render_image(output_path):
+def render_image():
+    temp_path = tempfile.gettempdir()
+    img_path = Path(temp_path)/"render.png"
     bpy.context.scene.eevee.use_raytracing = True
     bpy.context.scene.eevee.ray_tracing_method = 'PROBE'
-
-    bpy.context.scene.render.image_settings.file_format = 'JPEG'
-    bpy.context.scene.render.filepath = output_path
+    bpy.context.scene.render.image_settings.file_format = 'PNG'
+    # There is no way to access the render directlty so we write a temporary file and read it back in
+    bpy.context.scene.render.filepath = str(img_path)
     bpy.ops.render.render(write_still = True)
+    # read the image and then delete the temporary file
+    img = cv.imread(img_path)
+    img_path.unlink()
+
+    return img
 
 def make_ground_plane(color_rgb):
     rgb = np.atleast_1d(color_rgb).astype(np.uint8)
@@ -207,25 +229,4 @@ def make_ground_plane(color_rgb):
     bpy.data.materials["Ground_Mat"].node_tree.nodes["Principled BSDF"].inputs[0].default_value = vals
 
 
-if __name__ == '__main__':
-    import json
 
-    model_file = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/athena-demo-resources/stl files/cv markers/3dbenchy_marked.stl"
-    camera_json = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/ARES-Print-Analyzer/resources/camera_calibration.json"
-    img_W, img_H = 1920,1080
-    with open(camera_json, mode="r", encoding="utf-8") as read_file:
-        cal_data = json.load(read_file)
-    K = np.array(cal_data['camera_matrix'])
-
-    rvec = np.array([[ 1.96181946],
-                [-1.98553789],
-                [-0.06276927]])
-    
-    tvec = np.array([[25.50644965],
-                    [22.70772802],
-                    [129.37464152]])
-    
-    filament_color = (255,140,85)
-    bed_color = (55,50,50)
-
-    render_synthetic_image(model_file,img_W,img_H,K,rvec,tvec,filament_color,bed_color,output_path='blender_render.jpg')

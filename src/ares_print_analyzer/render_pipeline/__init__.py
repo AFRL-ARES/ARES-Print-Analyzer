@@ -1,0 +1,1 @@
+from .render_image import render_synthetic_image

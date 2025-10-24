@@ -40,7 +40,7 @@ def add_markers_to_stl(input_path,
     bbox_min = bbox_min[:2]
     bbox_max = bbox_max[:2]
     bbox_center = bbox_center[:2]
-    bbox_extent = bbox_extent[:2]
+    bbox_extent = bbox_extent
 
     # Add padding to the bounding box
     bbox_min -= padding
@@ -93,7 +93,7 @@ def add_markers_to_stl(input_path,
                     'object_center':bbox_center.tolist()+[0],
                     'object_bounds_min':bbox_min.tolist()+[0],
                     'object_bounds_max':bbox_max.tolist()+[0],
-                    'object_bounds_extent':bbox_extent.tolist()+[0],
+                    'object_bounds_extent':bbox_extent.tolist(),
                     'marker_size':marker_size,
                     'aruco_ids':aruco_ids,
                     'aruco_corners':np.array(aruco_corners).tolist(),

@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 import json
 
-def correct_distortion(image_data,calibration_file):
+def correct_distortion(image_data,cal_data):
     """
     Corrects camera lens distortion in an image using calibration parameters.
 
@@ -27,8 +27,6 @@ def correct_distortion(image_data,calibration_file):
         >>> undistorted = correct_camera_distortion(img, 'calibration.json')
     """
     DIM = image_data.shape[:2][::-1]
-    with open(calibration_file, mode="r", encoding="utf-8") as read_file:
-        cal_data = json.load(read_file)
     K = np.array(cal_data['camera_matrix'])
     D = np.array(cal_data['distortion_coefficients'])
     if cal_data['fisheye']:

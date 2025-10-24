@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ares_print_analyzer"
+version = "0.0.1"
+authors = [{ name = "AFRL", email = "AFRL.RX.AREScontact@us.af.mil" }]
+description = "Athena Analyzer"
+license = "MIT"
+requires-python = ">= 3.10"
+
+dependencies = [
+  "PyAres (>=0.1.0)",
+  "bpy",
+  "numpy (>=2.2.0)",
+  "opencv-python",
+  
+]
+
+[project.urls]
+"Homepage" = "https://github.com/AFRL-ARES"

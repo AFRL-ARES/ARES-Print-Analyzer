@@ -1,6 +1,6 @@
 from pathlib import Path
 import json
-from preprocessing import add_markers_to_stl
+from ares_print_analyzer.preprocessing import add_markers_to_stl
 from datetime import datetime, timezone
 
 

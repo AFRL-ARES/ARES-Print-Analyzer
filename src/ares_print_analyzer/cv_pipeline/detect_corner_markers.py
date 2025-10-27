@@ -52,7 +52,7 @@ def detect_corner_markers(img, inverted=False, debug=False):
     >>> corners = detect_corner_markers(img)
     >>> corners = detect_corner_markers(img, inverted=True, debug=True)  # With debug output
     """
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001) # Criteria for corner refinement
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.001) # Criteria for corner refinement
     # Grayscale versions of image
     
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -139,7 +139,7 @@ def detect_corner_markers(img, inverted=False, debug=False):
     diameters = props['equivalent_diameter'][idx]
 
     if np.any(centers_1):
-        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (15,15), (-1,-1), criteria)
+        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (7,7), (-1,-1), criteria)
     else:
         raise Exception("Could not locate the centers of any corner markers")
 

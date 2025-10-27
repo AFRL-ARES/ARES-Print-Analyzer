@@ -73,7 +73,7 @@ def get_chi_statistic(histogram1: list | np.ndarray,
 
   return stats
 
-# Original Routine by Graig Ganiano
+# Original Routine by Graig Ganitano
 
 # def get_chi_statistic(histogram1, histogram2):
 #   OUTLIER_THRESHOLD = 1.2

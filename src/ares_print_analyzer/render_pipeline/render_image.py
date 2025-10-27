@@ -49,7 +49,7 @@ def init_scene(model_file,W,H):
     mat.use_nodes = True
     mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.2 # Roughness value of 0.2
     mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 2 # IOR of 2
-    mat.node_tree.nodes["Principled BSDF"].inputs[12].default_value = 1 # Specular IOR level of 1
+    mat.node_tree.nodes["Principled BSDF"].inputs[13].default_value = 0.1 # Specular IOR level of 0.1
     
     bpy.ops.object.material_slot_add()
     bpy.context.object.material_slots[0].material = mat
@@ -57,11 +57,14 @@ def init_scene(model_file,W,H):
     bpy.data.materials["Model_Mat"].node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.2
 
 
-    # Configure the rendered scene to the approriate size
+    # Configure the rendered scene to the approriate size and approximately correct colors
     scene = bpy.context.scene
     scene.render.resolution_x = W
     scene.render.resolution_y = H
     scene.render.engine = 'BLENDER_EEVEE_NEXT'
+    scene.view_settings.view_transform = 'Standard'
+    scene.view_settings.look = 'High Contrast'
+
 
     # Set the camera view distance
     cam = bpy.data.objects["Camera"].data
@@ -219,9 +222,9 @@ def make_ground_plane(color_rgb):
 
     mat = bpy.data.materials.new(name='Ground_Mat')
     mat.use_nodes = True
-    mat.node_tree.nodes["Principled BSDF"].inputs[1].default_value = 0.5 # Metallic 0.2
-    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.5 # Roughness value of 0.3
-    mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 1.5 # IOR of 1.5
+    mat.node_tree.nodes["Principled BSDF"].inputs[1].default_value = 0.0 # Metallic 0.2
+    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.15 # Roughness value of 0.3
+    mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 1.1 # IOR of 1.5
 
     
     # bpy.ops.object.material_slot_add()

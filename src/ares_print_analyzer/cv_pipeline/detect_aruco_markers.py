@@ -25,6 +25,10 @@ def detect_aruco_markers(img, debug=False):
     gray_inv = (255-gray)
     aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
     arucoParams = cv.aruco.DetectorParameters()
+    arucoParams.cornerRefinementMethod = cv.aruco.CORNER_REFINE_SUBPIX
+    arucoParams.cornerRefinementMinAccuracy = 0.01
+    arucoParams.cornerRefinementWinSize = 7
+    arucoParams.cornerRefinementMaxIterations = 100
 
     # aruco markers are expected to have light pixles on the inside, so try both options
     # this should let the detection work whether the filament is lighter or darker than the

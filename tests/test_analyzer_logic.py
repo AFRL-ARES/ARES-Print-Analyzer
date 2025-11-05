@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 from ares_print_analyzer import pose_and_render
 from ares_print_analyzer.analysis import *
+from ares_print_analyzer.results_visualization import plot_polar_histogram
 
 class request(object):
   def __init__(self,inputs,settings):
@@ -73,6 +74,8 @@ def analyze(request: request) -> tuple[float, bool]:
     stats = get_chi_statistic(syn_hist,exp_hist)
     row_ind, col_ind = linear_sum_assignment(stats)
     score = stats[row_ind, col_ind].sum()/len(row_ind)
+
+    plot_polar_histogram(syn_hist,exp_hist,row_ind,col_ind)
   except Exception as e:
     print("An error occured during scoring: {}".format(e))
     return np.inf, False

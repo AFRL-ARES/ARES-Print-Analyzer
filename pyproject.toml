@@ -15,6 +15,7 @@ dependencies = [
   "bpy",
   "numpy (>=2.2.0)",
   "opencv-python",
+  "ffmpeg-python"
   
 ]
 

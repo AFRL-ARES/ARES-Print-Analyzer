@@ -1,7 +1,9 @@
 import numpy as np
 import ffmpeg
 
-def save_video(file_name:str, frames:list, framerate:float=30.0,frametime:np.ndarray=5*np.ones(8),vcodec='libx264'):
+def save_video(file_name:str, frames:list, framerate:float=30.0,frametime:np.ndarray | float=5,vcodec='libx264'):
+    if isinstance(frametime,float):
+        frametime = frametime*np.ones(len(frames))
     height,width,channels = frames[0].shape
     process = (
         ffmpeg

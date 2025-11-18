@@ -70,8 +70,9 @@ def get_chi_statistic(histogram1: list | np.ndarray,
 
   # 5. Place the computed results into the top-left corner of the padded matrix.
   stats[:size1, :size2] = chi_sq_matrix
-
-  return stats
+  # The scipy implementation of the linear sum assignment problem can handle non-square cost matrices, so we nolonger need to pad
+  stats = chi_sq_matrix
+  return chi_sq_matrix
 
 # Original Routine by Graig Ganitano
 

@@ -65,20 +65,30 @@ def get_histogram(contourPts):
   # The difference is an (N, N, 2) array of all (dx, dy) pairs.
   diffs = points[:, np.newaxis, :] - points[np.newaxis, :, :]
 
-  # 4. Calculate angles and distances for all pairs simultaneously.
+  # 4. Calculate angles and distances for all pairs simultan`eously.
   # These operations now act on entire (N, N) matrices.
   angles = np.arctan2(diffs[:, :, 1], diffs[:, :, 0])
   distances = np.sqrt(diffs[:, :, 0]**2 + diffs[:, :, 1]**2)
 
   log_distances_matrix = np.log(np.maximum(1e-5, distances))
 
+  # NOTE: Graig's original binning logic here is wrong and doesn't actually do what he says it does in the paper
+  # Because of the integer rounding you actually end up with the bin located around 0 angle being twice the size of the other bins, while bin six inlcludes ONLY points
+  # which fall at exactly pi or -pi radians. We need to calculate all angles relative to the positve x axis
+
   # 5. Calculate the bin for every pair at once.
+  angles[angles<0] += 2 * np.pi # convert angles from [-pi, pi] range to [0, 2*pi]
   angle_bins = (angles / angleSize).astype(int)
+  # It is fine to bin distances this way since the calculation just returns a magnitude
   distance_bins = (log_distances_matrix / intervalSize).astype(int)
 
   # Combine into a single index for the 60-bin histogram.
-  indices = distance_bins * 12 + angle_bins
-
+  # NOTE Need to adjust binning as well the multiplication and adding approach leads to multiple bins having the same number, have to offset one of bining matrices
+  # before we combine
+  # goal of this indexing step should be to produce a unique value for each combination of bins such that there are 60 unique values 
+  indices = (distance_bins+1) * 12 + angle_bins
+  # subtract 12 to make the (valid) indices start at 0
+  indices -= 12 
   # 6. Efficiently populate the histogram.
   # We create a mask to ignore invalid indices and self-comparisons.
   histogram = np.zeros((n_points, 60), dtype=int)
@@ -136,6 +146,8 @@ def get_histogram(contourPts):
 #           if i != j:
 #               ang = angle(points[i], points[j])
 #               angleBin = int(ang / angleSize)
+#               if angleBin <0:
+#                  print('negative angle')
 #               distance = dist(points[i], points[j]) 
 #               distance = max(0.0, math.log(max(1e-5,distance)))
 #               distanceBin = int(distance / intervalSize)

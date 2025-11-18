@@ -1,5 +1,6 @@
 import numpy as np
 from stl import mesh
+from pathlib import Path
 import cv2 as cv
 import json
 
@@ -420,6 +421,6 @@ def create_aruco_marker(marker_id, dictionary, physical_size, thickness, center,
 
 if __name__ == "__main__":
     from pathlib import Path
-    input_stl = Path("../athena-demo-resources/stl files/orignal/3dbenchy.stl")
+    input_stl = Path("../athena-demo-resources/stl files/orignal/string_test.stl")
     output_file = input_stl.parent.parent / 'test_output'
-    add_markers_to_stl(str(input_stl), str(output_file))
+    add_markers_to_stl(input_stl, output_file)

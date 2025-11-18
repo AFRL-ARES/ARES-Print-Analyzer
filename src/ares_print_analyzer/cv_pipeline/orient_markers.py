@@ -24,7 +24,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
         model_aruco_corners = np.array(config_data['aruco_corners'], dtype=np.float32)
         model_aruco_ids = np.array(config_data['aruco_ids'], dtype=int)
         model_circle_centers = np.array(config_data['circle_centers'], dtype=np.float32)
-        marker_thickness = config_data['marker_thickness']
+        #marker_thickness = config_data['marker_thickness']
     except KeyError as e:
         print(f"Error: Missing expected key in JSON file - {e}")
         return None, None

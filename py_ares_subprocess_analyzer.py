@@ -31,27 +31,17 @@
 ###
 
 from PyAres import AresAnalyzerService, Analysis, AnalysisRequest, AresDataType, Outcome
+import subprocess
+import sys
+import os
 from scipy.optimize import linear_sum_assignment
 import cv2
 import numpy as np
 from pathlib import Path
-from src.ares_print_analyzer import pose_and_render
-from src.ares_print_analyzer.analysis import *
 
-def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
-  nparr = np.frombuffer(image_bytes, np.uint8)
-  img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-  
-  if isinstance(img_np, np.ndarray):
-    return img_np
-  
-  else:
-    return np.empty(0)
-
-def analyze(request: AnalysisRequest) -> Analysis:
+def Analyze(request: AnalysisRequest) -> Analysis:
   # inputs
   image_bytes: bytes = request.inputs["Image"]
-  input_image = convert_image_bytes_to_ndarray(image_bytes)
   experiment_name: str = request.request_metadata.experiment_id
   campain_name: str = request.request_metadata.campaign_name
   # settings
@@ -60,62 +50,75 @@ def analyze(request: AnalysisRequest) -> Analysis:
   model_json: str = request.settings["Model JSON Path"]
   output_dir: str = request.settings["Output Path"]
 
-  exists = Path(model_file).exists()
-  suffix = Path(model_file).suffix
   # 1. Confrim that all necesary files exist and are in the right format
   if (not Path(model_file).exists()) or Path(model_file).suffix != '.stl':
-    raise FileExistsError("The specifed model file does not exist or is not a .stl file")
-    return Analysis(0.0, False)
+    print("The specifed model file does not exist or is not a .stl file")
+    return Analysis(0.0, Outcome.FAILURE)
   if not Path(config_json).exists():
-    raise FileExistsError("The specifed configuaton JSON file does not exist")
-    return Analysis(0.0, False)
+    print("The specifed configuaton JSON file does not exist")
+    return Analysis(0.0, Outcome.FAILURE)
   if not Path(model_json).exists():
-    raise FileExistsError("The specifed model information JSON file does not exist")
-    return Analysis(0.0, False)
+    print("The specifed model information JSON file does not exist")
+    return Analysis(0.0, Outcome.FAILURE)
   
   # 2. Create the output path if it does not exist
   output_path = Path(output_dir) / campain_name / experiment_name
   output_path.mkdir(exist_ok=True, parents=True)
-  # 3. Perform pose estimation on experimental image and render syntheic image
-  try:
-    experiment_image, synthetic_image, roi_min, roi_max, obj_center = pose_and_render(input_image,
-                                                                                      model_file,
-                                                                                      config_json,
-                                                                                      model_json,
-                                                                                      str(output_path),
-                                                                                      experiment_name)
-  except Exception as e:
-    print("An error occured in the compuer vision pipeline: {}".format(e))
-    return Analysis(0.0, Outcome.FAILURE)
+  image_path = f"{output_path}\\base_image.png"
 
-  # 4. Crop the images down to only the ROI and Get the contours from the experimental and synthetic images
-  exp_crop = experiment_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
-  syn_crop = synthetic_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
-  local_center = obj_center - roi_min
-  try:
-    exp_contour, syn_contour = get_contours(exp_crop,syn_crop,local_center)
-  except Exception as e:
-    print("An error occured during contour extration: {}".format(e))
-    return Analysis(0.0, Outcome.FAILURE)
-  # 5. Get the histograms for both contours
-  try: 
-    exp_hist = get_histogram(exp_contour)
-    syn_hist = get_histogram(syn_contour)
-  except Exception as e: 
-    print("An error occured during histogram calculation: {}".format(e))
-    return Analysis(0.0, Outcome.FAILURE)
-
-  # 6. Score the contours on how similar they are
-  try:
-    stats = get_chi_statistic(syn_hist,exp_hist)
-    row_ind, col_ind = linear_sum_assignment(stats)
-    score = stats[row_ind, col_ind].sum()/len(row_ind)
-  except Exception as e:
-    print("An error occured during scoring: {}".format(e))
-    return Analysis(0.0, Outcome.FAILURE)
+  with open(image_path, "wb") as f:
+      f.write(image_bytes)
   
-  analysis = Analysis(score, Outcome.SUCCESS)
-  return analysis
+  # Get the path to your pipeline script
+  script_dir = os.path.dirname(os.path.realpath(__file__))
+  script_path = os.path.join(script_dir, "experimental_test_pipeline.py")
+
+  # 3. Build the command
+  # This ensures the subprocess uses the same python environment as our gRPC service
+  python_executable = sys.executable
+  command = [
+      python_executable,
+      script_path,
+      "--image-path", image_path,
+      "--model_file", model_file,
+      "--config_json", config_json,
+      "--model_json", model_json,
+      "--experiment_name", experiment_name 
+  ]
+
+  # 4. Run the subprocess and capture its output
+  try:
+      # We run the command and capture stdout/stderr as text
+      result = subprocess.run(
+          command,
+          capture_output=True,
+          text=True,
+          check=True,  # This will raise an error if Blender fails
+          timeout=240
+      )
+      
+      # 5. Get the score from the script's standard output
+      # We assume your script *only* prints the final score
+      print(result.stderr)
+      print(result.stdout)
+      score_str = result.stdout.strip()
+      score = float(score_str)
+
+      # 6. Return the score in your gRPC response
+      return Analysis(result=score, outcome=Outcome.SUCCESS)
+
+  except subprocess.CalledProcessError as e:
+      # Blender script failed
+      error_message = f"Blender pipeline failed: {e.stderr}"
+      print(error_message, file=sys.stderr)
+      return Analysis(result=-1.0, error_string=error_message)
+      
+  except Exception as e:
+      # Other error (e.g., timeout, can't find blender.exe)
+      error_message = f"Internal server error: {e}"
+      print(error_message, file=sys.stderr)
+      return Analysis(result=-1.0, error_string=error_message)
+    
 
 if __name__ == "__main__":
   print("PyAres Print Analyzer")
@@ -133,9 +136,8 @@ if __name__ == "__main__":
   4. The parent directory for any outputs - key: "Output Path"
     Note: Output images will be saved in <Output Path>/campaign_name/experiment_name/
   """
-  
 
-  analyzer = AresAnalyzerService(analyze, "Print Analyzer", "1.0.0", description)
+  analyzer = AresAnalyzerService(Analyze, "Print Analyzer", "1.0.0", description)
 
   analyzer.add_analysis_parameter("Image", AresDataType.BYTE_ARRAY)
 

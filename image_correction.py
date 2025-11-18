@@ -55,7 +55,7 @@ def detect_corner_markers(img,fil_rgb, bed_rgb, debug=False):
     gray_inv = (255-gray)
 
     '''
-    Method 1:   Use the knwon colors of the filament and the printbed to
+    Method 1:   Use the known colors of the filament and the printbed to0
                 threshold the image in HSV color space based on the Hue and 
                 Saturation values. Omitting Value helps account for the fact that 
                 low layer-count objects may be darker. 
@@ -86,11 +86,25 @@ def detect_corner_markers(img,fil_rgb, bed_rgb, debug=False):
     #this should produce a mask with the markers identifed and surrounded by a border but also a lot of 
     # small blobs all over the image due to noise and uneven lighting
     kernel = np.ones((3,3),np.uint8)
+
+    if mask_img is None or mask_img.size == 0:
+        if debug:
+            print("Warning: mask_img is None or empty after morphology")
+        return np.array([])
+    
     mask_img = cv.morphologyEx(mask_img,cv.MORPH_OPEN,kernel)
 
     # Right now we're jsut trying to find cirlces, so we can fill any holes that may be in the markers
     mask_uf = mask_img.copy() # an unfilled copy of the mask to save for later
     mask_img = binary_fill_holes(mask_img)
+
+    if mask_img is None:
+    # If binary_fill_holes fails or returns None, handle it gracefully.
+    # We should return an empty array for the corner centers.
+        if debug:
+            print("Warning: binary_fill_holes returned None or failed.")
+        return np.array([])
+    
     mask_img = (255 * mask_img.astype(np.uint8)) # reconvert to something that opencv likes
 
 
@@ -120,10 +134,11 @@ def detect_corner_markers(img,fil_rgb, bed_rgb, debug=False):
     # After we get rid of all the miscleanous junk using the indexing we've already done
     # we can look at the internal areas of each of the identified circles 
     # the things we want to get rid of will have highly circular featrues so we can use the same approch to find them.
-    mask_img[np.isin(l,props['label'][~idx])] = 0
-    mask_uf[np.isin(l,props['label'][~idx])] = 0
-    
-    d_mask = np.logical_and(mask_img,~mask_uf)
+    mask_img[np.isin(l,props['label'][~idx])] = 0 # type: ignore
+    mask_uf[np.isin(l,props['label'][~idx])] = 0 # type: ignore
+
+    #Adjusted to fix Pylance warnings
+    d_mask = np.logical_and(mask_img, ~mask_uf.astype(bool))
     d_l = label(d_mask)
     d_props= regionprops_table(d_l,d_mask,['label',
                                         'area',
@@ -137,8 +152,8 @@ def detect_corner_markers(img,fil_rgb, bed_rgb, debug=False):
     # Now that we have the region we need to get rid of, we need to find its lable in the orignal image
     # and from there get its index in the original props dictt
 
-    d_mask[np.isin(d_l,d_props['label'][~d_idx])] = 0
-    bad_labels = np.unique(l[d_mask])
+    d_mask[np.isin(d_l, d_props['label'][~d_idx])] = 0 # type: ignore
+    bad_labels = np.unique(l[d_mask]) # type: ignore
     bad_idx = np.argwhere(np.isin(props['label'],bad_labels))
     idx[bad_idx] = False
 
@@ -149,7 +164,7 @@ def detect_corner_markers(img,fil_rgb, bed_rgb, debug=False):
     
 
     if np.any(centers_1):
-        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (15,15), (-1,-1), criteria)
+        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (15,15), (-1,-1), criteria) # type: ignore
 
     if debug:
         out_img = img.copy()
@@ -266,7 +281,7 @@ def estimate_pose(detected_arucos, detected_circles, camera_params_file, model_p
                     id = 2
                 elif np.all(x == [-1.,-1.]):
                     id = 3
-                return id
+                return id # type: ignore
             
             for i, r in enumerate(circle_vecs):
                 id = which_corner(r)
@@ -416,7 +431,7 @@ def estimate_pose(detected_arucos, detected_circles, camera_params_file, model_p
                         for corner in corner_candidates:
                             if corner not in assignment_dict:
                                 circle_dict[corner] = detected_circles[c]
-                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles)) # type: ignore
                                 assignment_dict[corner]=c
 
         for c in circle_dict:
@@ -473,10 +488,10 @@ def estimate_pose(detected_arucos, detected_circles, camera_params_file, model_p
             tl = np.squeeze(tl).astype(int)
             br = np.squeeze(br).astype(int)
 
-            cv.line(debug_image,tl,tr,(255,0,0),5)
-            cv.line(debug_image,tr,br,(255,0,0), 5)
-            cv.line(debug_image,br,bl,(255,0,0), 5)
-            cv.line(debug_image,bl,tl,(255,0,0), 5)
+            cv.line(debug_image,tl,tr,(255,0,0),5) # type: ignore
+            cv.line(debug_image,tr,br,(255,0,0), 5) # type: ignore
+            cv.line(debug_image,br,bl,(255,0,0), 5) # type: ignore
+            cv.line(debug_image,bl,tl,(255,0,0), 5) # type: ignore
 
             # Draw the 3D coordinate axes on the image
             cv.drawFrameAxes(debug_image, camera_matrix, dist_coeffs, rvec, tvec, 10) # is the length of the axis in mm

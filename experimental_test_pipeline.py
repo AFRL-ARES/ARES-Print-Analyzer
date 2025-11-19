@@ -37,15 +37,15 @@ def get_script_arguments():
                         type=str,
                         required=True,
                         help="Path to the image for analysis")
-    parser.add_argument("--model-file",
+    parser.add_argument("--model-file-path",
                         type=str,
                         required=True,
                         help="Path to the stl model")
-    parser.add_argument("--config-json",
+    parser.add_argument("--config-json-path",
                         type=str,
                         required=True,
                         help="Path to the config json file")
-    parser.add_argument("--model-json",
+    parser.add_argument("--model-json-path",
                         type=str,
                         required=True,
                         help="Path to the model json file")
@@ -126,11 +126,11 @@ if __name__ == "__main__":
     
     final_score = run_analysis_pipeline(args.image_path, 
                                         args.output_path, 
-                                        args.model_file, 
-                                        args.config_json, 
-                                        args.model_json, 
+                                        args.model_file_path, 
+                                        args.config_json_path, 
+                                        args.model_json_path, 
                                         args.experiment_name)
     
     # CRITICAL: Print *only* the final score to stdout.
     # The gRPC service's subprocess.run() will read this value.
-    print(final_score)
+    print(f"FINAL SCORE:{final_score}")

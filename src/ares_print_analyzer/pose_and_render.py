@@ -36,6 +36,7 @@ import cv2 as cv
 import json
 from pathlib import Path
 from itertools import product
+import sys
 
 def get_analysis_roi(img_w,img_h,config_data):
     # Get the bounding box plus 10% for cood measure
@@ -88,13 +89,13 @@ def pose_and_render(img: np.ndarray,
         with open(str(config_json), 'r') as f:
             c_data = json.load(f)
     except FileNotFoundError as e:
-        print(f"Error: Could not find input file - {e}")
+        print(f"Error: Could not find input file - {e}", file=sys.stderr)
 
     try:
         with open(str(model_json), 'r') as f:
             m_data = json.load(f)
     except FileNotFoundError as e:
-        print(f"Error: Could not find input file - {e}")
+        print(f"Error: Could not find input file - {e}", file=sys.stderr)
     
     config_data = c_data | m_data
 

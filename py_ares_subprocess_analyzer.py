@@ -79,11 +79,12 @@ def Analyze(request: AnalysisRequest) -> Analysis:
   command = [
       python_executable,
       script_path,
+      "--",
       "--image-path", image_path,
-      "--model_file", model_file,
-      "--config_json", config_json,
-      "--model_json", model_json,
-      "--experiment_name", experiment_name 
+      "--model-file-path", model_file,
+      "--config-json-path", config_json,
+      "--model-json-path", model_json,
+      "--experiment-name", experiment_name 
   ]
 
   # 4. Run the subprocess and capture its output
@@ -101,11 +102,14 @@ def Analyze(request: AnalysisRequest) -> Analysis:
       # We assume your script *only* prints the final score
       print(result.stderr)
       print(result.stdout)
+      score_location = result.stdout.find("SCORE:")
+      score = result.stdout[score_location + 6:]
+      print(f"Received a final score of {score}")
       score_str = result.stdout.strip()
-      score = float(score_str)
+      float_score = float(score)
 
       # 6. Return the score in your gRPC response
-      return Analysis(result=score, outcome=Outcome.SUCCESS)
+      return Analysis(result=float_score, outcome=Outcome.SUCCESS)
 
   except subprocess.CalledProcessError as e:
       # Blender script failed

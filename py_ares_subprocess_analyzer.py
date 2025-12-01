@@ -100,12 +100,17 @@ def Analyze(request: AnalysisRequest) -> Analysis:
       
       # 5. Get the score from the script's standard output
       # We assume your script *only* prints the final score
-      print(result.stderr)
-      print(result.stdout)
       score_location = result.stdout.find("SCORE:")
       score = result.stdout[score_location + 6:]
-      print(f"Received a final score of {score}")
-      score_str = result.stdout.strip()
+      if score.strip() == "0.0":
+         print("ANALYSIS FAILURE! CHECK OUTPUT OF ANALYZER!")
+         print("##### STDERR #####")
+         print(result.stderr)
+         print("##### STDOUT #####")
+         print(result.stdout)
+
+      else:
+        print(f"Received a final score of {score}")
       float_score = float(score)
 
       # 6. Return the score in your gRPC response

@@ -4,12 +4,12 @@ import numpy as np
 import cv2 as cv
 
 
-image_file = "../athena-demo-resources/test images/X150Y105Z110.jpg"
-model_file = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/stl files/cv markers/3dbenchy_marked.stl"
-config_json = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/processed files/config.json"
-model_json = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/stl files/cv markers/3dbenchy_marked_spatial.json"
+image_file = "../athena-demo-resources/test images/nick tests/base_image.png"
+model_file = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.stl"
+config_json = "../athena-demo-resources/processed files/config.json"
+model_json = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.json"
 debug_folder = '../athena-demo-resources/debug'
-test_name = 'X150Y105Z110'
+test_name = 'bunny_head'
 
 e_img = cv.imread(image_file)
 

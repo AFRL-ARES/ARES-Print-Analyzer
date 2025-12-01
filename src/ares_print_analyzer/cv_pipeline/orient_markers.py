@@ -24,6 +24,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
         model_aruco_corners = np.array(config_data['aruco_corners'], dtype=np.float32)
         model_aruco_ids = np.array(config_data['aruco_ids'], dtype=int)
         model_circle_centers = np.array(config_data['circle_centers'], dtype=np.float32)
+        model_aruco_dict = dict(zip(model_aruco_ids,model_aruco_corners))
         #marker_thickness = config_data['marker_thickness']
     except KeyError as e:
         print(f"Error: Missing expected key in JSON file - {e}")
@@ -42,7 +43,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
         # The marker ID directly corresponds to the index in our model file
         if id < len(model_aruco_corners):
             # We use the top-left corner of the ArUco marker
-            object_points.append(model_aruco_corners[id])
+            object_points.append(model_aruco_dict[id])
             image_points.append(c[0]) # Extract the (x,y) of the first corner
             # make some approximate orientation vectors based on the corners of the aruco boxes.
             # While not the first choice of orientation method, they can be used in a pinch to 

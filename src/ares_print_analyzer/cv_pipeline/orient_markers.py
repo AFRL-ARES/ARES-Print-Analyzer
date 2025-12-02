@@ -41,7 +41,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
     aruco_approx_vectors = dict()
     for id, c in zip(marker_ids, corners):
         # The marker ID directly corresponds to the index in our model file
-        if id < len(model_aruco_corners):
+        if id <= np.max(model_aruco_ids):
             # We use the top-left corner of the ArUco marker
             object_points.append(model_aruco_dict[id])
             image_points.append(c[0]) # Extract the (x,y) of the first corner
@@ -101,17 +101,31 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                 By comparing the list of nearest neighbors to the known adjacnecy structure of the grid we can determin which points 
                 go with which index
             '''
-
             nearest_neighbors = dict()
             for id, ar in aruco_centroids.items():
+                #filtering down potential points to find correct nearest neighbor points
+                # 1st pass: just find the two closest points
                 dist = get_dist(ar,detected_circles)
                 sort_args = np.argsort(dist)
                 nn = sort_args[:2]
-                vec_angle = get_angle(detected_circles[nn[0]],detected_circles[nn[1]],ar)
-                if vec_angle < 170: 
-                    nn = nn[0] # toss out the further point
-                    
-                nearest_neighbors[id] = np.atleast_1d(nn)
+                # 2nd figure out if the relative locations are resonable given the known strcuture of the grid.
+                # true nearest neightbor points will be nearly orthogonal in the rotated coordinate frame, so ~+/- 10 degrees from 0, +/-90 or 180
+                rot_mat = np.column_stack(aruco_approx_vectors[id])
+                rel_vecs = np.matvec(rot_mat,detected_circles[nn])-np.matmul(rot_mat,ar)
+                rel_angles = np.atan2(rel_vecs[:,0],rel_vecs[:,1])*(180/np.pi)
+                rel_angles = np.abs(rel_angles) # Reflect of x axis so we don't need to consider -90
+                rel_angles[rel_angles > 90] -= 90 # rotate quadrant so evertything is on 0-90 and we dn't need to consider 180
+                rel_angles[rel_angles > 45] = 45-(rel_angles[rel_angles > 45]-45) # refeclt across 45 so everything we want to keep is close to 0
+                nn = nn[rel_angles <= 10] 
+
+                # dist = get_dist(ar,detected_circles)
+                # sort_args = np.argsort(dist)
+                # nn = sort_args[:2]
+                # vec_angle = get_angle(detected_circles[nn[0]],detected_circles[nn[1]],ar)
+                # if vec_angle < 170: 
+                #     nn = nn[0] # toss out the further point
+                if nn.size > 0:
+                    nearest_neighbors[id] = np.atleast_1d(nn)
 
             # invert the nearest neighbor dict
             inverse_nn = defaultdict(list)

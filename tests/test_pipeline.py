@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 
 
-image_file = "../athena-demo-resources/test images/nick tests/base_image.png"
+image_file = "../athena-demo-resources/test images/nick tests/base_image_2.png"
 model_file = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.stl"
 config_json = "../athena-demo-resources/processed files/config.json"
 model_json = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.json"

@@ -17,6 +17,17 @@ def get_dist(a,c):
     # helper to compute the distance of each corner point in (c) from the aruco marker centroid (a)
     return np.linalg.vector_norm(c-a,axis=1)
 
+def aruco_cent_dir(i):
+    if i == 0:
+        return (-1,0)
+    elif i == 1:
+        return (0,-1)
+    elif i == 2:
+        return (1,0)
+    elif i == 3:
+        return (0,-1)
+
+
 def filter_cicles(detected_cirlces, aruco_centroids, aruco_vectors,model_aruco_ids):
     # Make sure that the dectected circles are all approximately the same distance from the approximate center of object as determind by the 
     #aruco markers
@@ -35,10 +46,31 @@ def filter_cicles(detected_cirlces, aruco_centroids, aruco_vectors,model_aruco_i
             idx = mods == 0
             idx[diffs==0] = False
             if np.any(idx):
-                obj_center = np.mean(np.row_stack((aruco_centroids[id],aruco_centroids[ids[idx]])),axis=0)
+                obj_center = np.mean(np.row_stack((aruco_centroids[id],aruco_centroids[ids[idx][0]])),axis=0)
                 center_found = True
-            if center_found:
-                break
+            else:
+                pass
+                # if there are no opposed markers, we'll take an orthognal pair, and draw a line towards the center
+                # of the object and use their intesect as an approximate center point
+                # id_rot = np.column_stack(aruco_vectors[id])
+                # id_pos = np.argwhere(model_aruco_ids==id)[0]
+                # id_dir = aruco_cent_dir(id_pos)
+                # id_vec = np.matmul(id_rot,id_dir)
+                # id_pts = np.row_stack((aruco_centroids[id],aruco_centroids[id]+id_vec))
+                # id_lin = np.polyfit(id_pts[:,0],id_pts[:,1],1,full=True)[0]
+
+                # opp_id = ids[np.argwhere(mods ==1)[0][0]]
+                # opp_id_rot = np.column_stack(aruco_vectors[opp_id])
+                # opp_id_pos = np.argwhere(model_aruco_ids==opp_id)[0]
+                # opp_id_dir = aruco_cent_dir(opp_id_pos)
+                # opp_id_vec = np.matmul(opp_id_rot,opp_id_dir)
+                # opp_id_pts = np.row_stack((aruco_centroids[id],aruco_centroids[id]+id_vec))
+                # opp_id_lin = np.polyfit(id_pts[:,0],id_pts[:,1],1,full=True)[0]
+        
+                
+
+        
+
     
     if center_found:
         aruco_center_dist = get_dist(obj_center,np.array(list(aruco_centroids.values())))

@@ -127,7 +127,7 @@ def setup_lights():
     cam = bpy.data.objects["Camera"]
     light_data = bpy.data.lights.new(name="LED", type='AREA')
     light_data.shape ='DISK'
-    light_data.energy = 30000
+    light_data.energy = 8500
     light_data.size=3
     for i in np.arange(n):
         light_name = "Light_{}".format(i)

@@ -17,6 +17,41 @@ def get_dist(a,c):
     # helper to compute the distance of each corner point in (c) from the aruco marker centroid (a)
     return np.linalg.vector_norm(c-a,axis=1)
 
+def filter_cicles(detected_cirlces, aruco_centroids, aruco_vectors,model_aruco_ids):
+    # Make sure that the dectected circles are all approximately the same distance from the approximate center of object as determind by the 
+    #aruco markers
+    center_found = False
+    if len(aruco_centroids) == 4:
+        # If we have all 4 we just find the midpoint, eazy peasy
+        obj_center = np.mean(np.array(list(aruco_centroids.values())),axis=0)
+        center_found = True
+    elif len(aruco_centroids) >= 2:
+        ids = np.array(list(aruco_centroids.keys()))
+        # if we have a pair of opposed markers, we can just grab the midpoint between them
+        id = np.min(ids)
+        for id in ids:
+            diffs = ids - id 
+            mods = diffs%2
+            idx = mods == 0
+            idx[diffs==0] = False
+            if np.any(idx):
+                obj_center = np.mean(np.row_stack((aruco_centroids[id],aruco_centroids[ids[idx]])),axis=0)
+                center_found = True
+            if center_found:
+                break
+    
+    if center_found:
+        aruco_center_dist = get_dist(obj_center,np.array(list(aruco_centroids.values())))
+        mean_aruco_dist = np.mean(aruco_center_dist)
+        circle_center_dist = get_dist(obj_center,detected_cirlces)
+        filtered_cirlces = detected_cirlces[circle_center_dist <= 2.5*mean_aruco_dist]
+
+    else:
+        filtered_cirlces = detected_cirlces
+    return filtered_cirlces
+
+      
+
 def orient_markers(detected_arucos, detected_circles, config_data):
     # 1. Load calibration and model data from JSON files
     try:
@@ -57,6 +92,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
 
     # Match detected circle markers to model corners using ArUco markers as references
     if detected_circles is not None and len(detected_circles) > 0:
+        detected_circles = filter_cicles(detected_circles,aruco_centroids,aruco_approx_vectors,model_aruco_ids)
         circle_dict = dict()
         if len(detected_circles) == 4:
             # If all 4 markers are visible, we only need the direction data from a single aruco

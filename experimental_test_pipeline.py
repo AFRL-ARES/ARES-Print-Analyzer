@@ -2,6 +2,7 @@ import sys
 import argparse
 import numpy as np
 import cv2
+from pathlib import Path
 from src.ares_print_analyzer import pose_and_render
 from src.ares_print_analyzer.analysis import *
 from scipy.optimize import linear_sum_assignment
@@ -70,10 +71,10 @@ def run_analysis_pipeline(image_path, output_path, model_path, config_json_path,
           image_bytes = f.read()
     except FileNotFoundError:
        print(f"Error: Image file not found at {image_path}", file=sys.stderr)
-       return 0.0
+       return 10000.0
     except Exception as e:
        print(f"An error occured while loading the image: {e}", file=sys.stderr)
-       return 0.0
+       return 10000.0
     
     input_image = convert_image_bytes_to_ndarray(image_bytes)
 
@@ -87,25 +88,31 @@ def run_analysis_pipeline(image_path, output_path, model_path, config_json_path,
                                                                                         experiment_name)
     except Exception as e:
       print("An error occured in the compuer vision pipeline: {}".format(e), file=sys.stderr)
-      return 0.0
+      return 10000.0
     
     # 4. Crop the images down to only the ROI and Get the contours from the experimental and synthetic images
     exp_crop = experiment_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
     syn_crop = synthetic_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
     local_center = obj_center - roi_min
+
+    output_folder = Path(output_path)
+    output_folder.mkdir(parents=True, exist_ok=True)
+
     try:
-      exp_contour, syn_contour = get_contours(exp_crop,syn_crop,local_center)
+      exp_contour, syn_contour, e, s = get_contours(exp_crop,syn_crop,local_center, debug=True)
+      cv2.imwrite(str(output_folder/"ex_cont.jpg"),e)
+      cv2.imwrite(str(output_folder/"sy_cont.jpg"),s)
 
     except Exception as e:
       print("An error occured during contour extration: {}".format(e), file=sys.stderr)
-      return 0.0
+      return 10000.0
     # 5. Get the histograms for both contours
     try: 
       exp_hist = get_histogram(exp_contour)
       syn_hist = get_histogram(syn_contour)
     except Exception as e: 
       print("An error occured during histogram calculation: {}".format(e), file=sys.stderr)
-      return 0.0
+      return 10000.0
 
     # 6. Score the contours on how similar they are
     try:
@@ -115,7 +122,7 @@ def run_analysis_pipeline(image_path, output_path, model_path, config_json_path,
 
     except Exception as e:
       print("An error occured during scoring: {}".format(e), file=sys.stderr)
-      return 0.0
+      return 10000.0
     
     return score
 

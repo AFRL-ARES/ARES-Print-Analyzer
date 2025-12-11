@@ -47,14 +47,14 @@ def init_scene(model_file,W,H):
     # Give the model a material so we can set its color later
     mat = bpy.data.materials.new(name='Model_Mat')
     mat.use_nodes = True
-    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.2 # Roughness value of 0.2
-    mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 2 # IOR of 2
-    mat.node_tree.nodes["Principled BSDF"].inputs[13].default_value = 0.1 # Specular IOR level of 0.1
+    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 1.0 # Roughness value of 0.2
+    mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 5.0 # IOR of 2
+    mat.node_tree.nodes["Principled BSDF"].inputs[13].default_value = 0.4 # Specular IOR level of 0.1
     
     bpy.ops.object.material_slot_add()
     bpy.context.object.material_slots[0].material = mat
 
-    bpy.data.materials["Model_Mat"].node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.2
+    bpy.data.materials["Model_Mat"].node_tree.nodes["Principled BSDF"].inputs[2].default_value = 1.0
 
 
     # Configure the rendered scene to the approriate size and approximately correct colors
@@ -127,7 +127,7 @@ def setup_lights():
     cam = bpy.data.objects["Camera"]
     light_data = bpy.data.lights.new(name="LED", type='AREA')
     light_data.shape ='DISK'
-    light_data.energy = 8500
+    light_data.energy = 9500
     light_data.size=3
     for i in np.arange(n):
         light_name = "Light_{}".format(i)
@@ -223,7 +223,7 @@ def make_ground_plane(color_rgb):
     mat = bpy.data.materials.new(name='Ground_Mat')
     mat.use_nodes = True
     mat.node_tree.nodes["Principled BSDF"].inputs[1].default_value = 0.0 # Metallic 0.2
-    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.15 # Roughness value of 0.3
+    mat.node_tree.nodes["Principled BSDF"].inputs[2].default_value = 0.25 # Roughness value of 0.3
     mat.node_tree.nodes["Principled BSDF"].inputs[3].default_value = 1.1 # IOR of 1.5
 
     

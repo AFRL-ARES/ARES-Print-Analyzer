@@ -262,26 +262,26 @@ def orient_markers(detected_arucos, detected_circles, config_data):
 
                                 
                         elif span[1] > span[0]: # Alignment along the Y axis
-                            c_id = nn[np.argmin(trans_vec[:,0])]
+                            c_id = nn[np.argmin(trans_vec[:,1])]
                             r_id = rn[0]
                             circle_dict[r_id] = detected_circles[c_id]
                             unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                             assignment_dict[r_id]=c_id
 
-                            c_id = nn[np.argmax(trans_vec[:,0])]
+                            c_id = nn[np.argmax(trans_vec[:,1])]
                             r_id = rn[1]
                             circle_dict[r_id] = detected_circles[c_id]
                             unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                             assignment_dict[r_id]=c_id
                     else:
                         c_id = nn[0]
-                        if trans_vec[:,0] > trans_vec[:,1]:
+                        if trans_vec[:,0] > trans_vec[:,1]: # Alignment along the X axis
                             r_id=rn[int(np.sign(trans_vec[:,0][0]))]
                             circle_dict[r_id] = detected_circles[c_id]
                             unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                             assignment_dict[r_id]=c_id
 
-                        elif trans_vec[:,1] > trans_vec[:,0]:
+                        elif trans_vec[:,1] > trans_vec[:,0]: # Alignment along the Y axis
                             r_id=rn[int(np.sign(trans_vec[:,1][0]))]
                             circle_dict[r_id] = detected_circles[c_id]
                             unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
@@ -311,4 +311,4 @@ def orient_markers(detected_arucos, detected_circles, config_data):
     # object_points += np.array([0,0,marker_thickness]) # Account for the fact that we'll be looking at the tops of the markers
     image_points = np.array(image_points, dtype=np.float32)
 
-    return object_points, image_points
+    return object_points, image_points 

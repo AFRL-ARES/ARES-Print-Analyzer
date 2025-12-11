@@ -39,7 +39,8 @@ from itertools import product
 import sys
 
 def get_analysis_roi(img_w,img_h,config_data):
-    # Get the bounding box plus 10% for cood measure
+    # Get the bounding box plus 10% for good measure
+    # then enfoce a square aspect ratio
 
     bbox_min = np.array(config_data['object_bounds_min'])
     bbox_max = np.array(config_data['object_bounds_max'])
@@ -61,7 +62,11 @@ def get_analysis_roi(img_w,img_h,config_data):
     p[p[:,1] >= img_h] = img_h
     roi_min = np.min(p,axis=0)
     roi_max = np.max(p,axis=0)
-    
+    roi_cent = np.mean(np.column_stack((roi_min,roi_max)),axis=1).astype(int)
+    roi_span = np.max(np.ptp(np.column_stack((roi_min,roi_max)),axis=1)).astype(int)
+    roi_min = roi_cent 
+    roi_min = roi_cent - roi_span//2
+    roi_max = roi_cent + roi_span//2
     obj_center,_ = cv.projectPoints(np.array([[0.0,0.0,0.0]]), rvec, tvec, K, D)
 
     p = p.astype(np.int32).squeeze()
@@ -76,7 +81,8 @@ def pose_and_render(img: np.ndarray,
                     model_json: str,
                     output_folder: str,
                     experiment_name: str,
-                    debug: bool = True) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                    debug: bool = False,
+                    skip_distortion_correction=False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # Ensure the output folder(s) exist
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -98,8 +104,10 @@ def pose_and_render(img: np.ndarray,
         print(f"Error: Could not find input file - {e}", file=sys.stderr)
     
     config_data = c_data | m_data
-
-    c_img = correct_distortion(img,config_data)
+    if not skip_distortion_correction:
+        c_img = correct_distortion(img,config_data)
+    else:
+        c_img = img
     img_W = c_img.shape[1]
     img_H = c_img.shape[0]
     # Save the undistorted image to the output folder
@@ -135,6 +143,35 @@ def pose_and_render(img: np.ndarray,
     filament_color = config_data['filament_color_rgb']
     bed_color = config_data['bed_color_rgb']
 
+    # We need some way to filter out the contorus of markers later on in case they end up overlapping the object
+    # what we'll do here is create the contours each marker border in model space and then transform the points into image coordinates
+    # These image space controus can then be used later to substract areas where the model an conour overlap which could give weird dcoaring results
+    model_space_contours = []
+    model_marker_size = config_data['configuration']['marker_size'] # aruco edge length or circle diameter
+    model_circle_centers = np.array(config_data['circle_centers'], dtype=np.float32)
+    model_aruco_corners = np.array(config_data['aruco_corners'], dtype=np.float32)
+    # Circle marker contours approximated by 32 points
+    radius = model_marker_size/2
+    angles = 2*np.pi*np.arange(32)/32
+    points = radius*np.column_stack((np.cos(angles),np.sin(angles),np.zeros_like(angles)))
+    for c in model_circle_centers:
+        c_points = points+c
+        model_space_contours.append(c_points)
+    # aruco corner from config file is top left, so we generate the other three and then find the center
+    corner_points = np.array([[0,0,0],
+                              [model_marker_size,0.0,0],
+                              [model_marker_size,-model_marker_size,0],
+                              [0.0,-model_marker_size,0]])
+    for c in model_aruco_corners:
+        c_points = c+corner_points
+        model_space_contours.append(c_points)
+
+    image_space_contours = []
+    for c in model_space_contours:
+        c_2d,_ = cv.projectPoints(c,rvec,tvec,K,np.zeros(4))
+        image_space_contours.append(c_2d.astype(int))
+    image_space_contours = tuple(image_space_contours)
+
     if debug:
         r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H,debug=True,debug_folder=str(debug_folder))
     else:
@@ -145,7 +182,7 @@ def pose_and_render(img: np.ndarray,
     # using the model bouding box and extent data and the pose estimation, figure out the pixels we need to actually do the analysis
     roi_min, roi_max, obj_center = get_analysis_roi(img_W,img_H,config_data)
 
-    return c_img, r_img, roi_min, roi_max, obj_center
+    return c_img, r_img, roi_min, roi_max, obj_center, image_space_contours
 
     
         

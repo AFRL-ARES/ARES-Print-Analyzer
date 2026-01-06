@@ -293,9 +293,9 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                         a_id = inverse_nn[c][0]
                         corner_candidates = aruco_to_corner_neighbors[a_id]
                         for corner in corner_candidates:
-                            if corner not in assignment_dict:
+                            if corner not in assignment_dict and len(unassigned_circles) > 0:
                                 circle_dict[corner] = detected_circles[c]
-                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c==unassigned_circles))
                                 assignment_dict[corner]=c
 
         for c in circle_dict:

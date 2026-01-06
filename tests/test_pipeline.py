@@ -4,22 +4,24 @@ import numpy as np
 import cv2 as cv
 
 
-image_file = "../athena-demo-resources/test images/nick tests/base_image_4.png"
+# image_file = "../athena-demo-resources/test images/nick tests/base_image_4.png"
+image_file = "/Users/artsloan/Dropbox/Documents/base_image.png"
+
 model_file = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.stl"
 config_json = "../athena-demo-resources/processed files/config.json"
 model_json = "../athena-demo-resources/processed files/bunny_head_0/bunny_head_0_marked.json"
 debug_folder = '../athena-demo-resources/debug'
-test_name = 'bunny_head'
+test_name = 'bunny_head_debug'
 
 e_img = cv.imread(image_file)
 
-c, r, roi_min,roi_max, obj_center = pose_and_render(e_img,
-                                                    model_file,
-                                                    config_json,
-                                                    model_json,
-                                                    debug_folder,
-                                                    test_name,
-                                                    debug=True)
+c, r, roi_min,roi_max, obj_center, marker_contours = pose_and_render(e_img,
+                                                                    model_file,
+                                                                    config_json,
+                                                                    model_json,
+                                                                    debug_folder,
+                                                                    test_name,
+                                                                    debug=True)
 
 debug_folder = Path(debug_folder)
 cv.imwrite(str(debug_folder / 'cam.jpg'),c)

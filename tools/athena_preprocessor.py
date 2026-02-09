@@ -36,12 +36,12 @@ User Configurable Settings:
 
 # %% User Inputs
 # Path to the STL can be a path or list of paths
-source_stl = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/athena-demo-resources/stl files/orignal/string_test.stl"
+source_stl = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/stl files/orignal/calicat_calico.stl"
 # Output path for 3D models
-output_dir = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/athena-demo-resources/processed files"
+output_dir = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/processed files"
 
 # Camera calibration JSON
-camera_json = "/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/ARES-Print-Analyzer/resources/camera_calibration.json"
+camera_json = '/Users/artsloan/Dropbox/Documents/Code/research/ARES/ATHENA/Print Analyzer Development/athena-demo-resources/resources/camera_calibration.json'
 # Filament Color
 filament_rgb = (245,211,122)
 # Bed Color

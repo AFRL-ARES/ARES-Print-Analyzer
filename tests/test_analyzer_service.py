@@ -32,7 +32,8 @@ if __name__ == "__main__":
         "Model Path": str(model_file),
         "Config JSON Path": str(config_json),
         "Model JSON Path": str(model_json),
-        "Output Path": str(output_dir)
+        "Output Path": str(output_dir),
+        "Output Level": 4
     }
 
     img_bytes = read_image_as_bytes(str(test_image))

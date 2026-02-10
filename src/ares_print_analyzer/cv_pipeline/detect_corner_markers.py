@@ -20,7 +20,7 @@ def round_up_odd_int(num):
     return int(np.ceil(num) // 2 * 2 + 1)
 
 # find the circular quartered markeers at the corner of the bounding box
-def detect_corner_markers(img, inverted=False, debug=False):
+def detect_corner_markers(img, inverted=False):
     """
     Detects and refines corner marker positions in an image using adaptive thresholding and morphological operations.
     This function processes an image to find circular corner markers, filters out noise and unwanted detections,
@@ -32,9 +32,6 @@ def detect_corner_markers(img, inverted=False, debug=False):
         Input image in BGR color format
     inverted : bool, optional
         If True, inverts the grayscale image before processing. Used when filament is darker than print bed.
-        Default is False.
-    debug : bool, optional
-        If True, saves a debug image showing detected markers and refined corners.
         Default is False.
     Returns
     -------
@@ -50,7 +47,7 @@ def detect_corner_markers(img, inverted=False, debug=False):
     --------
     >>> img = cv.imread('print_bed.jpg')
     >>> corners = detect_corner_markers(img)
-    >>> corners = detect_corner_markers(img, inverted=True, debug=True)  # With debug output
+    >>> corners = detect_corner_markers(img, inverted=True)  # With inverted image
     """
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.001) # Criteria for corner refinement
     # Grayscale versions of image
@@ -143,14 +140,4 @@ def detect_corner_markers(img, inverted=False, debug=False):
     else:
         raise Exception("Could not locate the centers of any corner markers")
 
-    if debug:
-        debug_img = img.copy()
-        for i, c in enumerate(centers_1):
-            cv.circle(debug_img,c.astype(np.int64),int(diameters[i])//2,(0, 255, 0), 3)
-            res = np.hstack((centers_1,r_centers_1))
-            res = res.astype(np.int32)
-            debug_img[res[:,1],res[:,0]]=[0,0,255]
-            debug_img[res[:,3],res[:,2]] = [0,255,0]
-        return r_centers_1, debug_img
-    else:
-        return r_centers_1
+    return r_centers_1, diameters

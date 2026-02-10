@@ -110,8 +110,8 @@ def orient_markers(detected_arucos, detected_circles, config_data):
         # The marker ID directly corresponds to the index in our model file
         if id <= np.max(model_aruco_ids):
             # We use the top-left corner of the ArUco marker
-            object_points.append(model_aruco_dict[id])
-            image_points.append(c[0]) # Extract the (x,y) of the first corner
+            #object_points.append(model_aruco_dict[id])
+            #image_points.append(c[0]) # Extract the (x,y) of the first corner
             # make some approximate orientation vectors based on the corners of the aruco boxes.
             # While not the first choice of orientation method, they can be used in a pinch to 
             # transform the image coordinates into something more parsable
@@ -236,7 +236,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
 
                 # transform the corrdiantes of the circles using the vectors from the aruco to put them in approximately the right relative locations
                 trans_circles = np.matmul(rot_mat,detected_circles[nn].T).T
-                trans_centroid = np.matmul(rot_mat,aruco_centroids[id])
+                trans_centroid = np.matmul(rot_mat,aruco_centroids[id].T).T
 
                 trans_vec = trans_circles-trans_centroid
                 if trans_vec.shape[0] > 1:

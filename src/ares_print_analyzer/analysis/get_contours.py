@@ -187,12 +187,5 @@ def get_contours(experimental_image: np.ndarray,
                                                          dilation_size=10,
                                                          min_area_threshold=50)
 
-    if debug:
-        e_img_m = experimental_image.copy()
-        cv.drawContours(e_img_m,[experimental_contour],0,(0,0,0),7)
-        s_img_m = synthetic_image.copy()
-        cv.drawContours(s_img_m,[synthetic_contour],0,(0,0,0),7)
-
-        return experimental_contour, synthetic_contour, e_img_m,s_img_m
-    else:
-        return experimental_contour, synthetic_contour
+    
+    return experimental_contour, synthetic_contour

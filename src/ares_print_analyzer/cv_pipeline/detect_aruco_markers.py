@@ -44,14 +44,4 @@ def detect_aruco_markers(img, debug=False):
     if len(corners) == 0:
         raise Exception("Could not locate any ArUco markers to set model orientation")
 
-    
-
-    if debug:
-        debug_image = img.copy()
-        debug_image = cv.aruco.drawDetectedMarkers(debug_image, corners, ids)
-    corners = tuple(np.squeeze(c) for c in corners)
-    ids = ids.ravel()
-    if debug:
-        return corners, ids, inverted, debug_image
-    else:
-        return corners, ids, inverted
+    return corners, ids, inverted

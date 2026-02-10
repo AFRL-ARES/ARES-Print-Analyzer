@@ -10,11 +10,13 @@ def render_synthetic_image(model_file:str,
                            tvec:np.ndarray,
                            filament_rgb:tuple | np.ndarray, 
                            bed_rgb:tuple | np.ndarray,
-                           debug_folder: str | None= None,
                            W:int = 1920,
                            H:int = 1080,
-                           debug:bool=False) -> np.ndarray:
+                           output_folder: str | None= None,
+                           experiment_name : str  = '',
+                           output_level :int=0) -> np.ndarray:
     
+    bpy.ops.wm.read_homefile() # Reset blender with the default scene to ensure a clean slate for rendering
     init_scene(model_file,W,H) # Intialize the scene with user supplied model    
     cam_cv2blend(camera_intrinsic)
     set_camera_position(rvec,tvec)
@@ -24,10 +26,9 @@ def render_synthetic_image(model_file:str,
     make_ground_plane(bed_rgb)
     img = render_image()
 
-    if debug:
-        if debug_folder is not None:
-            debug_out = Path(debug_folder)/"scene.blend"
-            bpy.ops.wm.save_as_mainfile(filepath=str(debug_out))
+    if output_level >=4:
+        output_path = Path(output_folder) / (experiment_name+"_scene.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=str(output_path))
 
     bpy.ops.wm.read_factory_settings()
     return img

@@ -4,6 +4,7 @@ import cv2 as cv
 from mathutils import Matrix, Vector
 import tempfile 
 from pathlib import Path
+from importlib import reload
 def render_synthetic_image(model_file:str,
                            camera_intrinsic:np.ndarray,
                            rvec:np.ndarray,
@@ -15,8 +16,6 @@ def render_synthetic_image(model_file:str,
                            output_folder: str | None= None,
                            experiment_name : str  = '',
                            output_level :int=0) -> np.ndarray:
-    
-    bpy.ops.wm.read_homefile() # Reset blender with the default scene to ensure a clean slate for rendering
     init_scene(model_file,W,H) # Intialize the scene with user supplied model    
     cam_cv2blend(camera_intrinsic)
     set_camera_position(rvec,tvec)

@@ -1,2 +1,3 @@
+from .analyzer_subprocess import subprocess_analyzer
 from .pose_and_render import pose_and_render
 from .contour_similarity_analyzer import contour_analyzer

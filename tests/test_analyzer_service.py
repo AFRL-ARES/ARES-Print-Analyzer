@@ -16,7 +16,7 @@ def read_image_as_bytes(image_path: Path) -> bytes:
     return image_bytes
 
 if __name__ == "__main__":
-    test_image = "tests/test_data/test_images/test_1.png"
+    test_image = "tests/test_data/test_images/test_2.png"
     model_file = "tests/test_data/bunny_head_0_marked.stl"
     config_json = "tests/test_data/config.json"
     model_json = "tests/test_data/bunny_head_0_marked.json"

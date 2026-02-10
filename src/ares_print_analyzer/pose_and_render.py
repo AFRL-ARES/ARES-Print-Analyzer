@@ -155,7 +155,7 @@ def pose_and_render(img: np.ndarray,
 
         d_img = c_img.copy()
         camera_matrix = np.array(config_data['camera_matrix'], dtype=np.float32)
-        dist_coeffs = np.array(config_data['distortion_coefficients'], dtype=np.float32)
+        dist_coeffs = np.zeros(4, dtype=np.float32) # We're working from the undisorted image
         model_bounds_min = np.array(config_data['object_bounds_min'], dtype=np.float32)
         model_bounds_max = np.array(config_data['object_bounds_max'], dtype=np.float32)
 
@@ -213,7 +213,7 @@ def pose_and_render(img: np.ndarray,
         image_space_contours.append(c_2d.astype(int))
     image_space_contours = tuple(image_space_contours)
     try:
-        r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H,output_level=True,
+        r_img = render_synthetic_image(model_path,K,rvec,tvec,filament_color,bed_color,W=img_W,H=img_H,output_level=output_level,
                                     output_folder=str(output_path),
                                     experiment_name=experiment_name)
     except Exception as e:

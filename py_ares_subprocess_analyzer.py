@@ -84,8 +84,9 @@ def Analyze(request: AnalysisRequest) -> Analysis:
       "--model-file-path", model_file,
       "--config-json-path", config_json,
       "--model-json-path", model_json,
-      "--experiment-name", experiment_name 
-  ]
+      "--experiment-name", experiment_name,
+      "--output-path", str(output_path)
+      ]
 
   # 4. Run the subprocess and capture its output
   try:

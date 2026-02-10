@@ -8,16 +8,17 @@ version = "0.0.1"
 authors = [{ name = "AFRL", email = "AFRL.RX.AREScontact@us.af.mil" }]
 description = "Athena Analyzer"
 license = "MIT"
-requires-python = "== 3.11"
+requires-python = ">= 3.11"
 
 dependencies = [
   "PyAres (>=0.1.0)",
-  "bpy",
+  "bpy (==4.5.3)",
   "numpy",
   "opencv-python",
-  "opencv-python-contribs",
+  "opencv-contrib-python",
   "ffmpeg-python",
-  "scipy"
+  "scipy",
+  "scikit-image"
 ]
 
 [project.urls]

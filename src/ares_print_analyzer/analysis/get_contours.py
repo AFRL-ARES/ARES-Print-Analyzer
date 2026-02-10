@@ -32,7 +32,6 @@
 
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
 
 def downselect_contours(contours: tuple,
                         center: np.ndarray) -> tuple:
@@ -100,4 +99,3 @@ def get_contours(experimental_image: np.ndarray,
         return experimental_contour, synthetic_contour, e_img_m,s_img_m
     else:
         return experimental_contour, synthetic_contour
-

@@ -186,12 +186,6 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                 rel_angles[rel_angles > 45] = 45-(rel_angles[rel_angles > 45]-45) # refeclt across 45 so everything we want to keep is close to 0
                 nn = nn[rel_angles <= 10] 
 
-                # dist = get_dist(ar,detected_circles)
-                # sort_args = np.argsort(dist)
-                # nn = sort_args[:2]
-                # vec_angle = get_angle(detected_circles[nn[0]],detected_circles[nn[1]],ar)
-                # if vec_angle < 170: 
-                #     nn = nn[0] # toss out the further point
                 if nn.size > 0:
                     nearest_neighbors[id] = np.atleast_1d(nn)
 
@@ -229,39 +223,25 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                         circle_dict[intersect] = detected_circles[c_id]
                         unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                         assignment_dict[intersect]=c_id
-            if len(circle_dict) == 0:
-                # no corners adjacnet to to identified arucos are present
-                # need to find another way. Use the same vector approach we used when 4 were present,
-                #  but now that we know which ponts are closest to the arucos we can use relative positions as long as we have both corners
 
-                for id, nn in nearest_neighbors.items():
+            # no corners adjacnet to to identified arucos are present
+            # need to find another way. Use the same vector approach we used when 4 were present,
+            #  but now that we know which ponts are closest to the arucos we can use relative positions as long as we have both corners
 
-                    rn = aruco_to_corner_neighbors[id]
-                    orient_vec = aruco_approx_vectors[id]
-                    rot_mat = np.column_stack(orient_vec)
+            for id, nn in nearest_neighbors.items():
 
-                    # transform the corrdiantes of the circles using the vectors from the aruco to put them in approximately the right relative locations
-                    trans_circles = np.matvec(rot_mat,detected_circles[nn])
-                    trans_centroid = np.matmul(rot_mat,aruco_centroids[id])
+                rn = aruco_to_corner_neighbors[id]
+                orient_vec = aruco_approx_vectors[id]
+                rot_mat = np.column_stack(orient_vec)
 
-                    trans_vec = trans_circles-trans_centroid
-                    if trans_vec.shape[0] > 1:
-                        span = np.ptp(trans_vec,axis=0)
-                        if span[0] > span[1]: # Alignment along the X axis
-                                c_id = nn[np.argmin(trans_vec[:,0])]
-                                r_id = rn[0]
-                                circle_dict[r_id] = detected_circles[c_id]
-                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
-                                assignment_dict[r_id]=c_id
+                # transform the corrdiantes of the circles using the vectors from the aruco to put them in approximately the right relative locations
+                trans_circles = np.matvec(rot_mat,detected_circles[nn])
+                trans_centroid = np.matmul(rot_mat,aruco_centroids[id])
 
-                                c_id = nn[np.argmax(trans_vec[:,0])]
-                                r_id = rn[1]
-                                circle_dict[r_id] = detected_circles[c_id]
-                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
-                                assignment_dict[r_id]=c_id
-
-                                
-                        elif span[1] > span[0]: # Alignment along the Y axis
+                trans_vec = trans_circles-trans_centroid
+                if trans_vec.shape[0] > 1:
+                    span = np.ptp(trans_vec,axis=0)
+                    if span[0] > span[1]: # Alignment along the X axis
                             c_id = nn[np.argmin(trans_vec[:,0])]
                             r_id = rn[0]
                             circle_dict[r_id] = detected_circles[c_id]
@@ -273,30 +253,39 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                             circle_dict[r_id] = detected_circles[c_id]
                             unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                             assignment_dict[r_id]=c_id
-                    else:
-                        c_id = nn[0]
-                        if trans_vec[:,0] > trans_vec[:,1]:
-                            r_id=rn[int(np.sign(trans_vec[:,0][0]))]
-                            circle_dict[r_id] = detected_circles[c_id]
-                            unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
-                            assignment_dict[r_id]=c_id
 
-                        elif trans_vec[:,1] > trans_vec[:,0]:
-                            r_id=rn[int(np.sign(trans_vec[:,1][0]))]
-                            circle_dict[r_id] = detected_circles[c_id]
-                            unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
-                            assignment_dict[r_id]=c_id
-            else:
-                # we've fixed one corner now, so we can use reuse the adjacency structure to identify the other points
-                for c in unassigned_circles:
-                    if any(inverse_nn[c]):
-                        a_id = inverse_nn[c][0]
-                        corner_candidates = aruco_to_corner_neighbors[a_id]
-                        for corner in corner_candidates:
-                            if corner not in assignment_dict:
-                                circle_dict[corner] = detected_circles[c]
-                                unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
-                                assignment_dict[corner]=c
+                            
+                    elif span[1] > span[0]: # Alignment along the Y axis
+                        c_id = nn[np.argmin(trans_vec[:,1])]
+                        r_id = rn[0]
+                        circle_dict[r_id] = detected_circles[c_id]
+                        unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                        assignment_dict[r_id]=c_id
+
+                        c_id = nn[np.argmax(trans_vec[:,1])]
+                        r_id = rn[1]
+                        circle_dict[r_id] = detected_circles[c_id]
+                        unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                        assignment_dict[r_id]=c_id
+                else:
+                    c_id = nn[0]
+                    if trans_vec[:,0] > trans_vec[:,1]: # Alignment along the X axis
+                        if np.sign(trans_vec[:,0]) > 0:
+                            r_id = rn[1]
+                        elif np.sign(trans_vec[:,0]) < 0:
+                            r_id = rn[0]
+                        circle_dict[r_id] = detected_circles[c_id]
+                        unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                        assignment_dict[r_id]=c_id
+
+                    elif trans_vec[:,1] > trans_vec[:,0]: # Alignment along the Y axis
+                        if trans_vec[:,1][0] > 0:
+                            r_id = rn[1]
+                        elif trans_vec[:,1][0] < 0:
+                            r_id = rn[0]
+                        circle_dict[r_id] = detected_circles[c_id]
+                        unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                        assignment_dict[r_id]=c_id
 
         for c in circle_dict:
             object_points.append(model_circle_centers[c])
@@ -311,4 +300,4 @@ def orient_markers(detected_arucos, detected_circles, config_data):
     # object_points += np.array([0,0,marker_thickness]) # Account for the fact that we'll be looking at the tops of the markers
     image_points = np.array(image_points, dtype=np.float32)
 
-    return object_points, image_points
+    return object_points, image_points 

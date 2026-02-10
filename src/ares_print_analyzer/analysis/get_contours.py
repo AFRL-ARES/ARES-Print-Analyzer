@@ -55,16 +55,99 @@ def downselect_contours(contours: tuple,
 
     return (contours[c_arg])
 
+def morphological_contour_cleanup(input_contour, marker_contours, img_shape, 
+                                  erosion_size=3, dilation_size=5, 
+                                  min_area_threshold=50):
+    """
+    Cleans an object contour by subtracting predicted marker regions based on 
+    morphological intersection checks.
+
+    Args:
+        input_contour: The main object contour (numpy array).
+        marker_contours: A tuple/list of predicted marker contours (numpy arrays).
+        img_shape: Tuple (height, width) of the image.
+        erosion_size: Kernel size for eroding marker mask (intersection check).
+        dilation_size: Kernel size for dilating marker mask (subtraction padding).
+        min_area_threshold: Minimum area to keep disjoint regions.
+
+    Returns:
+        The largest remaining contour after subtraction and cleanup.
+    """
+    
+    # 1. Initialize Master Mask with the input contour filled
+    # This represents the object we want to clean
+    h, w = img_shape[:2]
+    master_mask = np.zeros((h, w), dtype=np.uint8)
+    cv.drawContours(master_mask, [input_contour], -1, 255, thickness=cv.FILLED)
+    
+    # Define Morphological Kernels
+    # Ellipse shapes are generally smoother for natural contours than Rects
+    erode_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (erosion_size, erosion_size))
+    dilate_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (dilation_size, dilation_size))
+
+    # 2. Iterate through predicted marker contours
+    for marker_cnt in marker_contours:
+        
+        # A. Create a temporary mask for this specific marker
+        marker_mask = np.zeros((h, w), dtype=np.uint8)
+        cv.drawContours(marker_mask, [marker_cnt], -1, 255, thickness=cv.FILLED)
+        
+        # B. Erode the marker mask to create the "Strict Check" region
+        # We shrink the marker. If this shrunken region still hits the object,
+        # it's definitely a valid overlap, not just edge noise.
+        eroded_marker_mask = cv.erode(marker_mask, erode_kernel, iterations=1)
+        
+        # C. Check Intersection
+        # logical AND between the main object and the eroded marker
+        intersection = cv.bitwise_and(master_mask, eroded_marker_mask)
+        
+        if cv.countNonZero(intersection) > 0:
+            # D. If Intersection Found: Prepare the Subtraction
+            # We go back to the ORIGINAL marker mask and Dilate it (pad it)
+            # to ensure we remove the marker traces completely.
+            dilated_marker_mask = cv.dilate(marker_mask, dilate_kernel, iterations=1)
+            
+            # E. Subtract from Master Mask
+            # We draw the dilated marker region as Black (0) onto the Master Mask
+            # This cuts the hole.
+            cv.drawContours(master_mask, [marker_cnt], -1, 0, thickness=cv.FILLED) 
+            # Note: To apply the full dilation padding, we subtract using the mask:
+            master_mask[dilated_marker_mask > 0] = 0
+
+    # 3. Final Cleanup and Hole Filling
+    # RETR_EXTERNAL only retrieves the outer boundary. 
+    # If the subtraction created a hole inside the object, this flag ignores it, 
+    # effectively "filling" the object back up instantly.
+    new_contours, _ = cv.findContours(master_mask, cv.RETR_EXTERNAL,cv.CHAIN_APPROX_NONE)
+    
+    if not new_contours:
+        return None
+
+    # 4. Remove small disconnected regions
+    valid_contours = []
+    for cnt in new_contours:
+        if cv.contourArea(cnt) > min_area_threshold:
+            valid_contours.append(cnt)
+            
+    if not valid_contours:
+        return None
+        
+    # Return the largest contour (assumption: the object is the largest thing)
+    largest_contour = max(valid_contours, key=cv.contourArea)
+    
+    return largest_contour
+
 def get_contours(experimental_image: np.ndarray,
                  synthetic_image: np.ndarray,
                  object_center: np.ndarray,
+                 marker_contours: tuple,
                  debug: bool = False) -> tuple[np.ndarray,np.ndarray]:
     # Returns the opencv contours of the experimental and synthetic object
     img_W = experimental_image.shape[1]
     img_H = experimental_image.shape[0]
 
     # Convert images to grayscale
-    syn_gray = cv.cvtColor(synthetic_image,cv.COLOR_BGR2GRAY)
+    syn_gray = cv.medianBlur(cv.cvtColor(synthetic_image,cv.COLOR_BGR2GRAY), 5)
     exp_gray = cv.cvtColor(experimental_image,cv.COLOR_BGR2GRAY)
 
     # Use Otsu's method to estimate the right global threshold value and then tweak it a bit to be more greedy so we don't miss details like stringing
@@ -89,12 +172,26 @@ def get_contours(experimental_image: np.ndarray,
         synthetic_contour = downselect_contours(syn_cont,object_center)
     else:
         raise Warning("Could Not find any synthetic contours")
+    
+    #cleanup any areas where the contours overlap the markers
+    experimental_contour = morphological_contour_cleanup(experimental_contour,
+                                                         marker_contours,
+                                                         experimental_image.shape,
+                                                         erosion_size=5,
+                                                         dilation_size=10,
+                                                         min_area_threshold=50)
+    synthetic_contour = morphological_contour_cleanup(synthetic_contour,
+                                                         marker_contours,
+                                                         experimental_image.shape,
+                                                         erosion_size=5,
+                                                         dilation_size=10,
+                                                         min_area_threshold=50)
 
     if debug:
         e_img_m = experimental_image.copy()
-        cv.drawContours(e_img_m,[experimental_contour],0,(255,0,0),5)
+        cv.drawContours(e_img_m,[experimental_contour],0,(0,0,0),7)
         s_img_m = synthetic_image.copy()
-        cv.drawContours(s_img_m,[synthetic_contour],0,(255,0,0),5)
+        cv.drawContours(s_img_m,[synthetic_contour],0,(0,0,0),7)
 
         return experimental_contour, synthetic_contour, e_img_m,s_img_m
     else:

@@ -32,7 +32,7 @@ def correct_distortion(image_data,cal_data):
     if cal_data['fisheye']:
         map1, map2 = cv.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv.CV_16SC2)
     else:
-        K_new, _ = cv.getOptimalNewCameraMatrix(K, D,DIM,0,DIM)
+        K_new, _ = cv.getOptimalNewCameraMatrix(K, D, DIM,0,DIM)
         map1, map2 = cv.initUndistortRectifyMap(K, D, np.eye(3), K_new, DIM, cv.CV_16SC2)
 
     undist_image = cv.remap(image_data, map1, map2, interpolation=cv.INTER_LINEAR,borderMode=cv.BORDER_CONSTANT)

@@ -139,7 +139,7 @@ def detect_corner_markers(img, inverted=False, debug=False):
     diameters = props['equivalent_diameter'][idx]
 
     if np.any(centers_1):
-        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (7,7), (-1,-1), criteria)
+        r_centers_1 = cv.cornerSubPix(gray, np.float32(centers_1), (11,11), (-1,-1), criteria)
     else:
         raise Exception("Could not locate the centers of any corner markers")
 

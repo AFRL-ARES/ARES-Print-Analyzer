@@ -225,4 +225,4 @@ analyzer/
 .vscode/
 OutputData/
 debug/
-test_output/
+tests/test_data/test_output/

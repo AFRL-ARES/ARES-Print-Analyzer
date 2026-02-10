@@ -81,7 +81,7 @@ def pose_and_render(img: np.ndarray,
                     model_json: str,
                     output_folder: str,
                     experiment_name: str,
-                    debug: bool = False,
+                    debug: bool = True,
                     skip_distortion_correction=False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # Ensure the output folder(s) exist
     output_folder = Path(output_folder)

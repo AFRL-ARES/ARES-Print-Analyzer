@@ -7,8 +7,6 @@ from src.ares_print_analyzer import pose_and_render
 from src.ares_print_analyzer.analysis import *
 from scipy.optimize import linear_sum_assignment
 
-
-
 def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
   nparr = np.frombuffer(image_bytes, np.uint8)
   img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -80,7 +78,7 @@ def run_analysis_pipeline(image_path, output_path, model_path, config_json_path,
 
     # 3. Perform pose estimation on experimental image and render syntheic image
     try:
-      experiment_image, synthetic_image, roi_min, roi_max, obj_center = pose_and_render(input_image,
+      experiment_image, synthetic_image, roi_min, roi_max, obj_center, marker_contours = pose_and_render(input_image,
                                                                                         model_path,
                                                                                         config_json_path,
                                                                                         model_json_path,
@@ -95,11 +93,13 @@ def run_analysis_pipeline(image_path, output_path, model_path, config_json_path,
     syn_crop = synthetic_image[roi_min[1]:roi_max[1],roi_min[0]:roi_max[0],:]
     local_center = obj_center - roi_min
 
+    marker_contours = tuple([c - roi_min for c in marker_contours])
+
     output_folder = Path(output_path)
     output_folder.mkdir(parents=True, exist_ok=True)
 
     try:
-      exp_contour, syn_contour, e, s = get_contours(exp_crop,syn_crop,local_center, debug=True)
+      exp_contour, syn_contour, e, s = get_contours(exp_crop,syn_crop,local_center, marker_contours, debug=True)
       cv2.imwrite(str(output_folder/"ex_cont.jpg"),e)
       cv2.imwrite(str(output_folder/"sy_cont.jpg"),s)
 

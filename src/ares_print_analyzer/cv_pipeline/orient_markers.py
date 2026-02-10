@@ -15,7 +15,7 @@ def get_angle(a,b,o):
 
 def get_dist(a,c):
     # helper to compute the distance of each corner point in (c) from the aruco marker centroid (a)
-    return np.linalg.vector_norm(c-a,axis=1)
+    return np.linalg.norm(c-a,axis=1)
 
 def aruco_cent_dir(i):
     if i == 0:
@@ -136,7 +136,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
             orient_vec = list(aruco_approx_vectors.values())[0]
             rot_mat = np.column_stack(orient_vec)
             # transform the corrdiantes of the circles using the vectors from the aruco to put them in approximately the right relative locations
-            transformed_circles = np.matvec(rot_mat,detected_circles)
+            transformed_circles = np.matmul(rot_mat,detected_circles.T).T
             # Will all 4 corners we can find the approximate center of the ROI and use signs of the relative locations 
             # of the corners to figure out what goes where.
             midppoint = np.mean(transformed_circles,axis=0)
@@ -179,8 +179,8 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                 # 2nd figure out if the relative locations are resonable given the known strcuture of the grid.
                 # true nearest neightbor points will be nearly orthogonal in the rotated coordinate frame, so ~+/- 10 degrees from 0, +/-90 or 180
                 rot_mat = np.column_stack(aruco_approx_vectors[id])
-                rel_vecs = np.matvec(rot_mat,detected_circles[nn])-np.matmul(rot_mat,ar)
-                rel_angles = np.atan2(rel_vecs[:,0],rel_vecs[:,1])*(180/np.pi)
+                rel_vecs = np.matmul(rot_mat,detected_circles[nn].T).T - np.matmul(rot_mat,ar)
+                rel_angles = np.arctan2(rel_vecs[:,0],rel_vecs[:,1])*(180/np.pi)
                 rel_angles = np.abs(rel_angles) # Reflect of x axis so we don't need to consider -90
                 rel_angles[rel_angles > 90] -= 90 # rotate quadrant so evertything is on 0-90 and we dn't need to consider 180
                 rel_angles[rel_angles > 45] = 45-(rel_angles[rel_angles > 45]-45) # refeclt across 45 so everything we want to keep is close to 0
@@ -235,7 +235,7 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                 rot_mat = np.column_stack(orient_vec)
 
                 # transform the corrdiantes of the circles using the vectors from the aruco to put them in approximately the right relative locations
-                trans_circles = np.matvec(rot_mat,detected_circles[nn])
+                trans_circles = np.matmul(rot_mat,detected_circles[nn].T).T
                 trans_centroid = np.matmul(rot_mat,aruco_centroids[id])
 
                 trans_vec = trans_circles-trans_centroid

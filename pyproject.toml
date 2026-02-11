@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ares_print_analyzer"
-version = "0.0.1"
+version = "0.8.0"
 authors = [{ name = "AFRL", email = "AFRL.RX.AREScontact@us.af.mil" }]
 description = "Athena Analyzer"
 license = "MIT"
@@ -12,7 +12,7 @@ requires-python = ">= 3.11"
 
 dependencies = [
   "PyAres (>=0.1.0)",
-  "bpy (==4.5.3)",
+  "bpy (==5.0.1)",
   "numpy",
   "opencv-python",
   "opencv-contrib-python",

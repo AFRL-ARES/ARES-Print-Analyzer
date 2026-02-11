@@ -9,7 +9,7 @@ if __name__ == '__main__':
     model_file = "tests/test_data/bunny_head_0_marked.stl"
     camera_json = "tests/test_data/config.json"
     debug_folder = 'tests/test_data/test_output'
-    test_name = 'X150Y105Z110'
+    test_name = 'render_test'
     img_W, img_H = 1920,1080
 
     # %% 

@@ -61,7 +61,7 @@ def init_scene(model_file,W,H):
     scene = bpy.context.scene
     scene.render.resolution_x = W
     scene.render.resolution_y = H
-    scene.render.engine = 'BLENDER_EEVEE_NEXT'
+    scene.render.engine = 'BLENDER_EEVEE'
     scene.view_settings.view_transform = 'Standard'
     scene.view_settings.look = 'High Contrast'
 

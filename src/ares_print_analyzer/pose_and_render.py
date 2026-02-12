@@ -93,15 +93,19 @@ def pose_and_render(img: np.ndarray,
         with open(str(config_json), 'r') as f:
             c_data = json.load(f)
     except FileNotFoundError as e:
-        print(f"Error: Could not find configuration json file - {e}")
-        raise e
+        print(f"Error: Could not find configuration json file at {config_json} Error: {e}")
+        raise FileNotFoundError(f"Could not find configuration json file - {e}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Configuration file is not valid JSON: {config_json}. Error: {e}")
 
     try:
         with open(str(model_json), 'r') as f:
             m_data = json.load(f)
     except FileNotFoundError as e:
         print(f"Error: Could not find model json file - {e}")
-        raise e
+        raise RuntimeError(f"Could not find model json file - {e}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Model information file is not valid JSON: {model_json}. Error: {e}") 
     
     config_data = c_data | m_data
 
@@ -121,7 +125,7 @@ def pose_and_render(img: np.ndarray,
         circle_centers, circle_diameters = detect_corner_markers(c_img,inverted)
     except Exception as e:
         print(f"An error occured during marker detection: {e}")
-        raise e
+        raise RuntimeError(f"An error occured during marker detection: {e}")
     
     if output_level >= 3:
         # Save the ArUco debug image to the output folder
@@ -142,13 +146,13 @@ def pose_and_render(img: np.ndarray,
         object_points, image_points = orient_markers((ids, corners), circle_centers, config_data)
     except Exception as e:
         print(f"An error occured during marker orientation: {e}")
-        raise e
+        raise RuntimeError(f"An error occured during marker orientation: {e}")
     
     try:
         rvec, tvec = estimate_pose(object_points, image_points, config_data)
     except Exception as e:
         print(f"An error occured during pose estimation: {e}")
-        raise e
+        raise RuntimeError(f"An error occured during pose estimation: {e}")
 
     if output_level >=3:
         # Save the pose estimation debug image to the output folder
@@ -218,7 +222,7 @@ def pose_and_render(img: np.ndarray,
                                     experiment_name=experiment_name)
     except Exception as e:
         print(f"An error occured during rendering: {e}")
-        raise e
+        raise RuntimeError(f"An error occured during rendering: {e}")
 
     if output_level >= 2:                             
         # Save the rendered image to the output folder

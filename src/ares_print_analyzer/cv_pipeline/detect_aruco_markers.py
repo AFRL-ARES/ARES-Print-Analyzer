@@ -1,6 +1,9 @@
 import cv2 as cv
 import numpy as np
 
+class MarkerDetectionError(RuntimeError):
+    """Raised when markers cannot be detected."""
+    pass
 
 def detect_aruco_markers(img, debug=False):
     """
@@ -42,6 +45,6 @@ def detect_aruco_markers(img, debug=False):
             inverted = True
 
     if len(corners) == 0:
-        raise Exception("Could not locate any ArUco markers to set model orientation")
+        raise MarkerDetectionError("Could not locate any ArUco markers to set model orientation")
 
     return corners, ids, inverted

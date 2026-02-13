@@ -85,7 +85,7 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
         if outcome_flag:
             outcome = Outcome.SUCCESS
         else:
-            outcome = Outcome.FAILURE
+            outcome = Outcome.WARNING # so that ARES OS doesn't die
             print("ANALYSIS FAILURE! CHECK OUTPUT OF ANALYZER!")
             print("##### STDERR #####")
             print(result.stderr)

@@ -1,8 +1,8 @@
 # Athena Contour Analysis Print Analyzer 
 
-This 3D print analyzer is designed for use with [Educational ARES](https://github.com/AFRL-ARES/Educational-ARES). The analysis approch is based on the technique outline in in **A hybrid metaheuristic and computer vision approach to closed-loop calibration of fused deposition modeling 3D printers** by Ganitano et al. (DOI: [10.1007/s40964-023-00480-1](https://doi.org/10.1007/s40964-023-00480-1)) with modificaitons to make it suitable for use with the Educational ARES project and imporve the robustness of the computer vision approch. Briefly, this code automates the grading of 3D prints by comparing an image of the physical object (experimental data) against a synthetic reference rendered from the original 3D model (ground truth).
+This 3D print analyzer is designed for use with [Educational ARES](https://github.com/AFRL-ARES/Educational-ARES). The analysis approach is based on the technique outline in in **A hybrid metaheuristic and computer vision approach to closed-loop calibration of fused deposition modeling 3D printers** by Ganitano et al. (DOI: [10.1007/s40964-023-00480-1](https://doi.org/10.1007/s40964-023-00480-1)) with modifications to make it suitable for use with the Educational ARES project and improve the robustness of the computer vision approach. Briefly, this code automates the grading of 3D prints by comparing an image of the physical object (experimental data) against a synthetic reference rendered from the original 3D model (ground truth).
 
-This project runs as a service using the [`PyAres` library](https://pypi.org/project/PyAres/), allowing it to integrate with Educational ARES.
+This project runs as a service using the [PyAres library](https://pypi.org/project/PyAres/), allowing it to integrate with Educational ARES.
 
 ## Features
 * **Automated Pose Estimation**: Uses ArUco and circular markers to automatically align the 3D model with the camera view, removing the need for a fixed, pre-calibrated camera view and enabling multiple prints without the need to clear the bed bewteen each print. 
@@ -108,7 +108,8 @@ The Output Level setting controls the verbosity of the data saved to disk (for d
 
 ## Camera Configuration
 
-The computer vision approach requires the calibraiotn of the intrinsic matrix and distortion coefficinets for the camera. Please see the [OpenCV documentation](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) on the topic and `tools/camera_calibration.py` If you are using the creality nebula camera that is part of the recomended hardware configuration, the fisheye camera model and the chessboard calibration pattern tends to give better results. 
+The computer vision approach requires the calibration of the intrinsic matrix and distortion coefficients for the camera. Please see the [OpenCV documentation](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) on the topic and `tools/camera_calibration.py`. If you are using the creality nebula camera that is part of the recomended hardware configuration, the fisheye camera model and the chessboard calibration pattern tends to give better results. 
 
 ## Calibration models and preparing a configuration file.
-We recommend the use of the bunny_head model. The original model as well as a version marked with the appropriate computer vision markers (and the associated .json file) is included in `tests/test_data`. To prepare a model for use see `tools/athena_preprocessor.py`  
+
+We recommend the use of the bunny_head model. The original model as well as a version marked with the appropriate computer vision markers (and the associated .json file) is included in `tests/test_data`. To prepare a model for use see `tools/athena_preprocessor.py`.  

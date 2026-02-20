@@ -109,6 +109,7 @@ def add_markers_to_stl(input_path,
     combined_mesh = mesh.Mesh(combined_data)
     combined_mesh.save(str(stl_output_path)) # type: ignore
 
+    # Saves the associated model JSON
     json_path = output_dir / (input_path.stem+"_marked.json")
     with open(str(json_path), 'w') as f:
             json.dump(spatial_dict, f)  
@@ -418,9 +419,3 @@ def create_aruco_marker(marker_id, dictionary, physical_size, thickness, center,
     marker_mesh.vectors = np.array(all_faces) # type: ignore
     marker_mesh.update_normals() # type: ignore
     return marker_mesh, start_corner+center # type: ignore
-
-if __name__ == "__main__":
-    from pathlib import Path
-    input_stl = Path("../athena-demo-resources/stl files/orignal/string_test.stl")
-    output_file = input_stl.parent.parent / 'test_output'
-    add_markers_to_stl(input_stl, output_file)

@@ -108,5 +108,7 @@ The Output Level setting controls the verbosity of the data saved to disk (for d
 
 ## Camera Configuration
 
-The computer vision approach requires the calibraiotn of the intrinsic matrix and distortion coefficinets. Please see the [OpenCV documentation](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) on the topic and tools/camera_calibration.ipynb If you are using the creality nebula camera that is part of the recomended hardware configuration, the fisheye camera model and the chessboard calibration pattern tends to give better results.
+The computer vision approach requires the calibraiotn of the intrinsic matrix and distortion coefficinets for the camera. Please see the [OpenCV documentation](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) on the topic and `tools/camera_calibration.py` If you are using the creality nebula camera that is part of the recomended hardware configuration, the fisheye camera model and the chessboard calibration pattern tends to give better results. 
 
+## Calibration models and preparing a configuration file.
+We recommend the use of the bunny_head model. The original model as well as a version marked with the appropriate computer vision markers (and the associated .json file) is included in `tests/test_data`. To prepare a model for use see `tools/athena_preprocessor.py`  

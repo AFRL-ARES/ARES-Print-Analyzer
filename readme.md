@@ -47,11 +47,11 @@ This project requires **Python 3.11**. Due to the dependency on `bpy` (Blender a
 1.  **Ensure you have Python 3.11 installed:**
     Check your version:
     ```bash
-    python3.11 --version
+    python --version
     ```
 2.  **Create the virtual environment:**
     ```bash
-    python3.11 -m venv ares_venv
+    python -m venv ares_venv
     ```
 3.  **Activate the environment:**
     * **Windows:**
@@ -113,3 +113,4 @@ The computer vision approach requires the calibration of the intrinsic matrix an
 ## Calibration models and preparing a configuration file.
 
 We recommend the use of the bunny_head model. The original model as well as a version marked with the appropriate computer vision markers (and the associated .json file) is included in `tests/test_data`. To prepare a model for use see `tools/athena_preprocessor.py`.  
+

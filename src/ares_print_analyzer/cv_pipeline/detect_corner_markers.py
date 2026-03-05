@@ -52,10 +52,19 @@ def detect_corner_markers(img, inverted=False):
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.001) # Criteria for corner refinement
     # Grayscale versions of image
     
+    # The lights on the nebula camera tend to show up as blue and can cause glare on the print bed. 
+    # Throwing away the blue channel before doing grayscale conversion helps increase the contrast 
+    gr_img =np.copy(img)
+    gr_img[:,:,0] = 0
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    equalized = clahe.apply(gray)
+    equalized = cv.convertScaleAbs(equalized, alpha=1.5, beta=0)
+   
     # if the Aruco finding routine had to invert the image to succede 
     if inverted: # for if the filament is darker than the print bed
         gray = (255-gray)
+        equalized = (255 - equalized)
 
     centers_1 = []
     r_centers_1 = []
@@ -64,7 +73,7 @@ def detect_corner_markers(img, inverted=False):
     # blur and thresholding values work for the nebula camera which has a resoltuion of 1080x1920
     # the parameters are all scaled based on the smaller dimension of the image 
     min_dim = np.min(gray.shape)
-    mask_img = cv.adaptiveThreshold(cv.medianBlur(gray,round_up_odd_int(min_dim/128)),
+    mask_img = cv.adaptiveThreshold(cv.medianBlur(equalized,round_up_odd_int(min_dim/128)),
                                     255,
                                     cv.ADAPTIVE_THRESH_MEAN_C,
                                     cv.THRESH_BINARY,
@@ -74,8 +83,12 @@ def detect_corner_markers(img, inverted=False):
 
     #this should produce a mask with the markers identifed and surrounded by a border but also a lot of 
     # small blobs all over the image due to noise and uneven lighting
-    kernel = np.ones((3,3),np.uint8)
+    kernel = np.ones((5,5),np.uint8)
+    
+    # open to get rid of speckyl things
     mask_img = cv.morphologyEx(mask_img,cv.MORPH_OPEN,kernel)
+    # erode once to help reduce blobs on the surface of the things we want to find
+    mask_img = cv.erode(mask_img,kernel,iterations = 1)
 
     # Right now we're jsut trying to find cirlces, so we can fill any holes that may be in the markers
     mask_uf = mask_img.copy() # an unfilled copy of the mask to use later
@@ -100,15 +113,15 @@ def detect_corner_markers(img, inverted=False):
     # for a circle this would obviously be 1, for a square it will be ~0.88.
     # Since squares will pick up some corner rounding so set the thresold to about 0.93
     # At this point there should only be the large cirlces that make up the markers and tiny dots
-    # so we'll throw away anything smaller than 1000 pixles in area
+    # so we'll throw away anything smaller than 2000 px in area
     props['circularity'] = np.sqrt(4*props['area']/np.pi) / (props['perimeter']/np.pi)
-    idx = np.bitwise_and(props['circularity'] >= 0.93, props['area'] > 1000)
+    idx = np.bitwise_and(props['circularity'] >= 0.93, props['area'] > 2000)
 
     # Sometimes the cirlce finding will pick up letering on the print bed (The letter o)
     # We need to descriminate between the targets and the extra circles so 
     # After we get rid of all the miscleanous junk using the indexing we've already done
     # we can look at the internal areas of each of the identified circles 
-    # the things we want to get rid of will have highly circular featrues so we can use the same approch to find them.
+    # the things we want to get rid of will have highly circular features so we can use the same approch to find them.
     mask_img[np.isin(l,props['label'][~idx])] = 0
     mask_uf[np.isin(l,props['label'][~idx])] = 0
     

@@ -224,10 +224,9 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                         unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                         assignment_dict[intersect]=c_id
 
-            # no corners adjacnet to to identified arucos are present
+            # no corners adjacent to to identified arucos are present
             # need to find another way. Use the same vector approach we used when 4 were present,
             #  but now that we know which ponts are closest to the arucos we can use relative positions as long as we have both corners
-
             for id, nn in nearest_neighbors.items():
 
                 rn = aruco_to_corner_neighbors[id]
@@ -287,13 +286,44 @@ def orient_markers(detected_arucos, detected_circles, config_data):
                         unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
                         assignment_dict[r_id]=c_id
 
+            if len(unassigned_circles) > 0:
+
+                    #For each of the candidate unassigned circles, find the adjacent, and thus closest assinged cirlce
+                    candidate_cirlces = list(set([0,1,2,3])-set(assignment_dict.keys()))
+                    # invert the assignment dict so we can co from the index in detected_circles to the circle id
+                    assignment_inv = {}
+                    for a_id, c_id in assignment_dict.items():
+                        assignment_inv[c_id] = a_id
+
+                    candidate_dict = {}
+                    for c in candidate_cirlces:
+                        adj_corner= np.array([list(aruco_to_corner_neighbors[i]) for i in corner_to_aruco_neighbors[c]]).ravel()
+                        adj_corner = np.setdiff1d(adj_corner,candidate_cirlces)[0]
+                        candidate_dict[adj_corner]=c
+
+                    # Find which of the assigned cirlces is closest to the candidate circle
+                    trans_circles = np.matmul(rot_mat,detected_circles.T).T
+                    for c_id in unassigned_circles:
+                        dist = get_dist(detected_circles[c_id],detected_circles)
+                        dist[c_id] = np.inf # we want to keep the index order but also get rid of tbe zero distnace for self comparison
+                        nearest_corner = assignment_inv[np.argmin(dist)]
+                        r_id = candidate_dict[nearest_corner]
+                        circle_dict[r_id] = detected_circles[c_id]
+                        unassigned_circles = np.delete(unassigned_circles,np.argwhere(c_id==unassigned_circles))
+                        assignment_dict[r_id]=c_id
+
         for c in circle_dict:
             object_points.append(model_circle_centers[c])
             image_points.append(circle_dict[c])
 
     # Ensure we have enough points for solvePnP
     if len(object_points) < 4:
-        raise Exception("Not enough points to perform pose estimation. Found {len(object_points)}, need at least 4.")
+        # Add on the aruco corners. These are generally less accurate so we only use them if we have to.
+        for i, id in enumerate(marker_ids):
+            object_points.append(model_aruco_dict[id])
+            image_points.append(corners[i][0]) # Extract the (x,y) of the first corner
+        if len(object_points) < 4:
+            raise Exception(f"Not enough points to perform pose estimation. Found {len(object_points)}, need at least 4.")
     
     # Convert lists to NumPy arrays
     object_points = np.array(object_points, dtype=np.float32)

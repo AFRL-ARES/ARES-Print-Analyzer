@@ -78,10 +78,13 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
         result_string = regex.search(result.stdout).group()
         results_dict = eval(result_string)
         new_stdout = regex.split(result.stdout)[0]
-        score = results_dict['SCORE']
+        score = float(results_dict['SCORE'])
         outcome_flag = results_dict['OUTCOME']
-
+        print('--- Analysis Completed ---')
+        print(f'\tObjective Score: {score}')
+        print('--- Analyzer Output ---')
         print(new_stdout)
+
         if outcome_flag:
             outcome = Outcome.SUCCESS
         else:
@@ -91,19 +94,19 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
             print(result.stderr)
 
         # 6. Return the score in your gRPC response
-        return Analysis(result=float(score), outcome=outcome)
+        return Analysis(result=score, outcome=outcome)
 
     except subprocess.CalledProcessError as e:
         # Blender script failed
         error_message = f"Blender pipeline failed: {e.stderr}"
         print(error_message, file=sys.stderr)
-        return Analysis(result=-1.0, error_string=error_message)
+        return Analysis(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
         
     except Exception as e:
         # Other error (e.g., timeout, can't find blender.exe)
         error_message = f"Internal server error: {e}"
         print(error_message, file=sys.stderr)
-        return Analysis(result=-1.0, error_string=error_message)
+        return Analysis(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
 
 def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
   nparr = np.frombuffer(image_bytes, np.uint8)

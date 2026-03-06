@@ -146,16 +146,20 @@ def get_contours(experimental_image: np.ndarray,
     img_W = experimental_image.shape[1]
     img_H = experimental_image.shape[0]
 
-    # Convert images to grayscale
+    # Convert images to grayscale, dropping the blue channel on the experimental image 
     syn_gray = cv.medianBlur(cv.cvtColor(synthetic_image,cv.COLOR_BGR2GRAY), 5)
-    exp_gray = cv.cvtColor(experimental_image,cv.COLOR_BGR2GRAY)
+    gr_img =np.copy(experimental_image)
+    gr_img[:,:,0] = 0
+    exp_gray = cv.medianBlur(cv.cvtColor(gr_img,cv.COLOR_BGR2GRAY),5)
+    clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    exp_gray = clahe.apply(exp_gray)
 
     # Use Otsu's method to estimate the right global threshold value and then tweak it a bit to be more greedy so we don't miss details like stringing
     syn_ret , _ = cv.threshold(syn_gray, 0, 255, cv.THRESH_OTSU)
     exp_ret, _ = cv.threshold(exp_gray, 0, 255, cv.THRESH_OTSU)
 
-    _ , syn_mask = cv.threshold(syn_gray, syn_ret*0.9, 255, cv.THRESH_BINARY)
-    _ , exp_mask = cv.threshold(exp_gray, exp_ret*0.9, 255, cv.THRESH_BINARY)
+    _ , syn_mask = cv.threshold(syn_gray, syn_ret*0.87, 255, cv.THRESH_BINARY)
+    _ , exp_mask = cv.threshold(exp_gray, exp_ret*0.8, 255, cv.THRESH_BINARY)
 
     # Find the contours of all white (True) blobs in the mask images.
     # This can return multiple contours, but thanks to the CV pose estimation we know where the 

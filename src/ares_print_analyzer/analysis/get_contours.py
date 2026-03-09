@@ -159,7 +159,7 @@ def get_contours(experimental_image: np.ndarray,
     exp_ret, _ = cv.threshold(exp_gray, 0, 255, cv.THRESH_OTSU)
 
     _ , syn_mask = cv.threshold(syn_gray, syn_ret*0.87, 255, cv.THRESH_BINARY)
-    _ , exp_mask = cv.threshold(exp_gray, exp_ret*0.8, 255, cv.THRESH_BINARY)
+    _ , exp_mask = cv.threshold(exp_gray, exp_ret*0.87, 255, cv.THRESH_BINARY)
 
     # Find the contours of all white (True) blobs in the mask images.
     # This can return multiple contours, but thanks to the CV pose estimation we know where the 

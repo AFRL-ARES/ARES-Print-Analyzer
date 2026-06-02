@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import re
+import pandas as pd
 
 def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
     #inputs

@@ -18,7 +18,8 @@ dependencies = [
   "opencv-contrib-python",
   "ffmpeg-python",
   "scipy",
-  "scikit-image"
+  "scikit-image",
+  "pandas",
 ]
 
 [project.urls]

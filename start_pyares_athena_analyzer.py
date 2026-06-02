@@ -78,4 +78,5 @@ if __name__ == "__main__":
     analyzer.add_setting("Model JSON Path", AresDataType.STRING)
     analyzer.add_setting("Output Path", AresDataType.STRING)
     analyzer.add_setting("Output Level", AresDataType.NUMBER, constraints=[0,1,2,3,4])
+    analyzer.add_setting("Swap File", AresDataType.STRING)
     analyzer.start()

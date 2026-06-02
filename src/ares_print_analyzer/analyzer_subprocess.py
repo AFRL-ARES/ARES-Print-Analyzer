@@ -93,6 +93,7 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
             print("##### STDERR #####")
             print(result.stderr)
 
+        update_swapfile(request.settings,score)
         # 6. Return the score in your gRPC response
         return Analysis(result=score, outcome=outcome)
 
@@ -117,3 +118,11 @@ def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
   
   else:
     return np.empty(0)
+  
+def update_swapfile(settings,result):
+    # Updates the last row of the swap file with the result
+    swap_file = settings.get('Swap File','')
+    if swap_file != '' and Path(swap_file).exists() and Path(swap_file).is_file():
+        df = pd.read_csv(str(swap_file))
+        df.loc[len(df)-1,'objective'] = result
+        df.to_csv(str(swap_file),index=False)

@@ -76,7 +76,7 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
         
         # The score and outcome flag are returned in a dict with the keys SCORE and OUTCOME. We parse the string and eval it to get the data.
         regex = re.compile(r'\{[\s\S]*?\}')
-        result_string = regex.search(result.stdout).group()
+        result_string = regex.search(result.stdout).group() # type: ignore
         results_dict = eval(result_string)
         new_stdout = regex.split(result.stdout)[0]
         score = float(results_dict['SCORE'])

@@ -29,7 +29,7 @@
 # SOFTWARE.
 # 
 ###
-from PyAres import Analysis, AnalysisRequest, Outcome
+from PyAres import AnalysisResponse, AnalysisRequest, Outcome
 from pathlib import Path
 import cv2
 import numpy as np

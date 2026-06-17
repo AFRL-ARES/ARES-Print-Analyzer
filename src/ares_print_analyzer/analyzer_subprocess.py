@@ -1,4 +1,4 @@
-from PyAres import Analysis, AnalysisRequest, Outcome
+from PyAres import AnalysisResponse, AnalysisRequest, Outcome
 import subprocess
 import sys
 import os
@@ -8,7 +8,7 @@ import numpy as np
 import re
 import pandas as pd
 
-def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
+def subprocess_analyzer(request: AnalysisRequest) -> AnalysisResponse:
     #inputs
     image_bytes: bytes = request.inputs["Image"]
     experiment_name: str = request.request_metadata.experiment_id
@@ -23,13 +23,13 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
     # 1. Confrim that all necesary files exist and are in the right format
     if (not Path(model_file).exists()) or Path(model_file).suffix != '.stl':
         print("The specifed model file does not exist or is not a .stl file")
-        return Analysis(1e5, Outcome.FAILURE)
+        return AnalysisResponse(1e5, Outcome.FAILURE)
     if not Path(config_json).exists():
         print("The specifed configuaton JSON file does not exist")
-        return Analysis(1e5, Outcome.FAILURE)
+        return AnalysisResponse(1e5, Outcome.FAILURE)
     if not Path(model_json).exists():
         print("The specifed model information JSON file does not exist")
-        return Analysis(1e5, Outcome.FAILURE)
+        return AnalysisResponse(1e5, Outcome.FAILURE)
   
     # 2. Create the output path if it does not exist
     output_path = Path(output_dir) / campaign_name / experiment_name
@@ -96,19 +96,19 @@ def subprocess_analyzer(request: AnalysisRequest) -> Analysis:
 
         update_swapfile(request.settings,score)
         # 6. Return the score in your gRPC response
-        return Analysis(result=score, outcome=outcome)
+        return AnalysisResponse(result=score, outcome=outcome)
 
     except subprocess.CalledProcessError as e:
         # Blender script failed
         error_message = f"Blender pipeline failed: {e.stderr}"
         print(error_message, file=sys.stderr)
-        return Analysis(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
+        return AnalysisResponse(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
         
     except Exception as e:
         # Other error (e.g., timeout, can't find blender.exe)
         error_message = f"Internal server error: {e}"
         print(error_message, file=sys.stderr)
-        return Analysis(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
+        return AnalysisResponse(result=1e5, error_string=error_message, outcome=Outcome.WARNING)
 
 def convert_image_bytes_to_ndarray(image_bytes) -> np.ndarray:
   nparr = np.frombuffer(image_bytes, np.uint8)

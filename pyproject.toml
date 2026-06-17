@@ -11,7 +11,7 @@ license = "MIT"
 requires-python = ">= 3.11"
 
 dependencies = [
-  "PyAres (>=0.1.0)",
+  "PyAres (>=1.0.0b1)",
   "bpy (==5.0.1)",
   "numpy",
   "opencv-python",

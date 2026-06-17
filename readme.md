@@ -114,3 +114,5 @@ The computer vision approach requires the calibration of the intrinsic matrix an
 
 We recommend the use of the bunny_head model. The original model as well as a version marked with the appropriate computer vision markers (and the associated .json file) is included in `tests/test_data`. To prepare a model for use see `tools/athena_preprocessor.py`.  
 
+## Distribution
+**Distribution Statement A**. Approved for public release: distribution is unlimited. AFRL-2026-2820
